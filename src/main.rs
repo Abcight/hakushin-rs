@@ -5,7 +5,8 @@ struct CharStats {
 	hp: f32,
 	atk: f32,
 	em: f32,
-	elemental_bonus: f32,
+	dmg_bonus: f32,
+	reaction_bonus: f32,
 	crit_rate: f32,
 	crit_damage: f32
 }
@@ -16,7 +17,8 @@ const TAO_BASE: CharStats = CharStats {
 	atk: 106.43,
 	crit_rate: 5.0,
 	crit_damage: 88.4,
-	elemental_bonus: 33.0,
+	dmg_bonus: 33.0,
+	reaction_bonus: 0.0,
 	em: 0.0,
 };
 
@@ -27,7 +29,7 @@ impl ToString for CharStats {
 			self.hp,
 			self.atk,
 			self.em,
-			self.elemental_bonus,
+			self.dmg_bonus,
 			self.crit_rate,
 			self.crit_damage
 		)
@@ -46,11 +48,11 @@ fn damage(
 	// Effective crit multiplier evaluated as n - number of hits, approaches infinity
 	let crit = 1.0 + (crit_rate / 100.0).clamp(0.0, 1.0) * crit_damage / 100.0;
 
-	// Assume we're fighting Masanori lvl. 70 if this switch is on
+	// Assume we're fighting Masanori lvl. 90 if this switch is on
 	let masanori = true;
 
-	let (enemy_def_multiplier,enemy_res_multiplier) = match masanori {
-		true => (0.52, 0.9),
+	let (enemy_def_multiplier, enemy_res_multiplier) = match masanori {
+		true => (0.5, 0.9),
 		false => (1.0, 1.0)
 	};
 
@@ -99,7 +101,7 @@ fn stats_homa_buff(
 	mut stats: CharStats
 ) -> CharStats {
 	stats.hp += base.hp * 0.2;
-	stats.atk += base.hp * 0.018;
+	stats.atk += stats.hp * 0.018;
 	stats
 }
 
@@ -108,7 +110,7 @@ fn stats_bennett_buff(
 	mut stats: CharStats
 ) -> CharStats {
 	stats.atk += 1000.0;
-	stats.elemental_bonus += 15.0;
+	stats.dmg_bonus += 15.0;
 	stats
 }
 
@@ -117,6 +119,56 @@ fn stats_mh_buff(
 	mut stats: CharStats
 ) -> CharStats {
 	stats.crit_rate += 36.0;
+	stats.dmg_bonus += 15.0;
+	stats
+}
+
+fn stats_shime_buff(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.dmg_bonus += 50.0;
+	stats
+}
+
+fn stats_mhplus_buff(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.crit_rate += 40.0;
+	stats.dmg_bonus += 20.0;
+	stats
+}
+
+fn stats_furina_buff(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.dmg_bonus += 75.0;
+	stats
+}
+
+fn stats_yelan_buff(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.dmg_bonus += 25.0; // averaged out
+	stats
+}
+
+fn stats_pyro_resonance_buff(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.atk += base.atk * 0.25;
+	stats
+}
+
+fn stats_hydro_resonance_buff(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.hp += base.hp * 0.25;
 	stats
 }
 
@@ -143,7 +195,8 @@ fn stats_raw(
 		atk: 311.0 + base.atk * (1.0 + (atk_rolls as f32 * 5.83) / 100.0 + mainstat_atk / 100.0),
 		crit_rate: base.crit_rate + mainstat_cr + crit_rate_rolls as f32 * 3.89,
 		crit_damage: base.crit_damage + mainstat_cd + crit_damage_rolls as f32 * 7.77,
-		elemental_bonus: base.elemental_bonus + mainstat_elemental,
+		dmg_bonus: base.dmg_bonus + mainstat_elemental,
+		reaction_bonus: 0.0,
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
 	};
 	for buff in dynamic_buffs {
@@ -180,19 +233,16 @@ fn stats(
 
 // The damage calculation for her CA at talent lvl. 10
 fn tao_ca_vape(
-	tao_stats: CharStats,
-	external_dmg_bonus: f32,
-	flat_ca_buff: f32,
-	reaction_bonus: f32
+	tao_stats: CharStats
 ) -> f32 {
 	let ca_multiplier = 242.57 / 100.0;
-	let vape_multiplier = 1.5 * (1.0 + (2.78 * tao_stats.em) / (1400.0 + tao_stats.em) + reaction_bonus);
+	let vape_multiplier = 1.5 * (1.0 + (2.78 * tao_stats.em) / (1400.0 + tao_stats.em) + tao_stats.reaction_bonus);
 
 	damage(
 		tao_stats.atk * ca_multiplier,
 		1.0,
-		flat_ca_buff,
-		(tao_stats.elemental_bonus + external_dmg_bonus) / 100.0,
+		0.0,
+		(tao_stats.dmg_bonus) / 100.0,
 		tao_stats.crit_rate,
 		tao_stats.crit_damage,
 		vape_multiplier
@@ -213,14 +263,14 @@ fn main() {
 		[  0.0,    46.6, 0.0,  46.6,   31.1, 0.0   ],  // HP + Pyro + CR
 	];
 
-	// Assuming we have 20 rolls to distribute across substats,
+	// Assuming we have 25 rolls to distribute across substats,
 	// find all possible substat combinations (ignore minrolls)
 	let mut arti_substat_distributions = Vec::new();
-	for hp in 0..21 {
-		for atk in 0..(21-hp) {
-			for em in 0..(21-atk-hp) {
-				for cr in 0..(21-atk-hp-em) {
-					for cd in 0..(21-atk-hp-em-cr) {
+	for hp in 0..26 {
+		for atk in 0..(26-hp) {
+			for em in 0..(26-atk-hp) {
+				for cr in 0..(26-atk-hp-em) {
+					for cd in 0..(26-atk-hp-em-cr) {
 						arti_substat_distributions.push([hp, atk, em, cr, cd]);
 					}
 				}
@@ -242,18 +292,18 @@ fn main() {
 				vec![					// This is a list of all the dynamic buffs
 					stats_soss_buff,
 					stats_tao_skill,
-					stats_bennett_buff
+					stats_furina_buff,
+					stats_yelan_buff,
+					stats_mh_buff,
+					stats_bennett_buff,
+					stats_pyro_resonance_buff,
+					stats_hydro_resonance_buff
 				],
 				mainstats,
 				substats
 			);
 
-			let damage = tao_ca_vape(
-				stats,
-				50.0 + 75.0, // Ext DMG% bonus - Shimenawa + Furina
-				0.0,		 // Ext flat bonus
-				0.0			 // Ext reaction bonus (eg. crimson)
-			);
+			let damage = tao_ca_vape(stats);
 
 			if damage > max_damage {
 				max_damage = damage;
@@ -270,9 +320,13 @@ fn main() {
 	// This will print the optimal build
 	// It will output the number of substat rolls denoted with 'r' at end.
 	if let Some(max_distribution) = max_distribution {
-		println!("OPTIMAL ARTIFACT STATS:");
 		let stats = vec!["EM", "HP", "ATK", "BONUS%", "CR", "CD", "HP%r", "ATK%r", "EMr", "CRr", "CDr"];
-		for i in 0..11 {
+		println!("OPTIMAL ARTIFACT MAINSTATS:");
+		for i in 0..6 {
+			println!("{}\t{}", stats[i], max_distribution[i]);
+		}
+		println!("\nOPTIMAL ARTIFACT SUBSTAT ROLLS:");
+		for i in 6..11 {
 			println!("{}\t{}", stats[i], max_distribution[i]);
 		}
 	}
