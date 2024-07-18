@@ -20,7 +20,7 @@ pub struct CharStats {
 impl ToString for CharStats {
 	fn to_string(&self) -> String {
 		format!(
-			"Stats {{\n\tHP: {},\n\tATK: {},\n\tEM: {},\n\tDMG%: {},\n\tCR: {},\n\tCD: {}\n}}",
+			"STATS:\nHP: {},\nATK: {},\nEM: {},\nDMG%: {},\nCR: {},\nCD: {}\n--------------",
 			self.hp,
 			self.atk,
 			self.em,
@@ -61,7 +61,7 @@ fn damage(
 fn stats_raw(
 	base: CharStats,
 	weapon: fn(CharStats) -> CharStats,
-	dynamic_buffs: Vec<fn(CharStats, CharStats) -> CharStats>,
+	dynamic_buffs: Vec<&dyn Fn(CharStats, CharStats) -> CharStats>,
 	mainstat_em: f32,
 	mainstat_hp: f32,
 	mainstat_atk: f32,
@@ -96,7 +96,7 @@ fn stats_raw(
 fn stats(
 	base: CharStats,
 	weapon: fn(CharStats) -> CharStats,
-	dynamic_buffs: Vec<fn(CharStats, CharStats) -> CharStats>,
+	dynamic_buffs: Vec<&dyn Fn(CharStats, CharStats) -> CharStats>,
 	mainstats: [f32; 6],
 	rolls: &[usize; 5],
 ) -> CharStats {
@@ -151,77 +151,6 @@ fn shark_na_bite(
 	)
 }
 
-fn shark_na1(
-	shark: &CharStats,
-	vape: bool
-) -> f32 {
-	let na_multiplier = 92.5 / 100.0;
-	let vape_multiplier = match vape {
-		true => forward_vape_multiplier(&shark),
-		false => 1.0
-	};
-
-	damage(
-		shark.atk * na_multiplier,
-		1.0,
-		0.0,
-		(shark.dmg_bonus + shark.na_bonus) / 100.0,
-		shark.crit_rate,
-		shark.crit_damage,
-		vape_multiplier
-	)
-}
-
-fn shark_na2(
-	shark: &CharStats,
-	vape: bool
-) -> f32 {
-	let na_multiplier = 80.3 / 100.0;
-	let vape_multiplier = match vape {
-		true => forward_vape_multiplier(&shark),
-		false => 1.0
-	};
-
-	damage(
-		shark.atk * na_multiplier,
-		1.0,
-		0.0,
-		(shark.dmg_bonus + shark.na_bonus) / 100.0,
-		shark.crit_rate,
-		shark.crit_damage,
-		vape_multiplier
-	)
-}
-
-fn shark_na3(
-	shark: &CharStats,
-	vape: bool
-) -> f32 {
-	let na_multiplier = 126.1 / 100.0;
-	let vape_multiplier = match vape {
-		true => forward_vape_multiplier(&shark),
-		false => 1.0
-	};
-
-	damage(
-		shark.atk * na_multiplier,
-		1.0,
-		0.0,
-		(shark.dmg_bonus + shark.na_bonus) / 100.0,
-		shark.crit_rate,
-		shark.crit_damage,
-		vape_multiplier
-	)
-}
-
-fn surfing_time_base(
-	mut base: CharStats,
-) -> CharStats {
-	base.crit_damage += 88.2;
-	base.atk += 542.0;
-	base
-}
-
 fn main() {
 	// We want to investigate various mainstat variations
 	let arti_mainstat_distributions = [
@@ -258,12 +187,13 @@ fn main() {
 		for substats in &arti_substat_distributions {
 			let stats = stats(
 				characters::SHARK,
-				surfing_time_base,		// This is the weapon base stat function
-				vec![					// This is a list of all the dynamic buffs
-					buffs::shime,
-					buffs::furina_burst,
-					buffs::hydro_resonance,
-					buffs::instructor_share,
+				buffs::surfing_time_base,			// This is the weapon base stat function
+				vec![								// This is a list of all the dynamic buffs
+					&buffs::surfing_time_buff(3),
+					&buffs::mhplus,
+					&buffs::furina_burst,			// It's debatable if she can even vape with her
+					&buffs::hydro_resonance,
+					&buffs::instructor_share,
 				],
 				mainstats,
 				substats
@@ -276,7 +206,13 @@ fn main() {
 			// The last one she can only apply one stack before the skill ends
 			damage += shark_na_bite(&stats, 3, true);
 			damage += shark_na_bite(&stats, 3, true);
-			damage += shark_na_bite(&stats, 2, true);
+			damage += shark_na_bite(&stats, 1, true);
+
+			// For each of these bites, she will also fire her missiles
+			// These do the same damage, but I don't think they'll vape
+			damage += shark_na_bite(&stats, 3, false);
+			damage += shark_na_bite(&stats, 3, false);
+			damage += shark_na_bite(&stats, 1, false);
 
 			let mut distribution = mainstats.to_vec();
 			distribution.extend(substats.map(|x| x as f32));

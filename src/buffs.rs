@@ -46,22 +46,35 @@ pub fn homa_base(
 	stats
 }
 
-pub fn homa_buff1(
-	base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.hp += base.hp * 0.2;
-	stats.atk += stats.hp * 0.008;
-	stats
+pub fn homa_buff(
+	under_half_hp: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |base, mut stats| {
+		stats.hp += base.hp * 0.2;
+		stats.atk += match under_half_hp {
+			true => stats.hp * 0.018,
+			false => stats.hp * 0.008
+		};
+		stats
+	}
 }
 
-pub fn homa_buff2(
-	base: CharStats,
-	mut stats: CharStats
+pub fn surfing_time_base(
+	mut base: CharStats,
 ) -> CharStats {
-	stats.hp += base.hp * 0.2;
-	stats.atk += stats.hp * 0.018;
-	stats
+	base.crit_damage += 88.2;
+	base.atk += 542.0;
+	base
+}
+
+pub fn surfing_time_buff(
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |_, mut stats| {
+		stats.hp += 20.0;
+		stats.na_bonus += 12.0 * stacks as f32;
+		stats
+	}
 }
 
 /////////////////////////////
