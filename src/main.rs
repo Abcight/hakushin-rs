@@ -1,31 +1,26 @@
+mod buffs;
+mod characters;
+mod rotations;
+
 // We'll be generating these algorithmically to find
 // the best possible outcome
 #[derive(Copy, Clone)]
-struct CharStats {
+pub struct CharStats {
 	hp: f32,
 	atk: f32,
 	em: f32,
 	dmg_bonus: f32,
+	na_bonus: f32,
+	ca_bonus: f32,
 	reaction_bonus: f32,
 	crit_rate: f32,
 	crit_damage: f32
 }
 
-// Her base stats
-const TAO_BASE: CharStats = CharStats {
-	hp: 15552.0,
-	atk: 106.43,
-	crit_rate: 5.0,
-	crit_damage: 88.4,
-	dmg_bonus: 33.0,
-	reaction_bonus: 0.0,
-	em: 0.0,
-};
-
 impl ToString for CharStats {
 	fn to_string(&self) -> String {
 		format!(
-			"Stats {{\n\tHP: {},\n\tATK: {},\n\tEM: {},\n\tELEM%: {},\n\tCR: {},\n\tCD: {}\n}}",
+			"Stats {{\n\tHP: {},\n\tATK: {},\n\tEM: {},\n\tDMG%: {},\n\tCR: {},\n\tCD: {}\n}}",
 			self.hp,
 			self.atk,
 			self.em,
@@ -35,6 +30,7 @@ impl ToString for CharStats {
 		)
 	}
 }
+
 // The damage formula expressed as a multivariate function
 fn damage(
 	base_dmg: f32,
@@ -59,117 +55,6 @@ fn damage(
 	(base_dmg * base_dmg_multiplier + additive_dmg_bonus) *
 	(1.0 + dmg_bonus) * crit * enemy_def_multiplier *
 	enemy_res_multiplier * amplifying_reaction
-}
-
-// Below section contains various buffs that can be applied
-// to Hu Tao. They will be used later
-fn stats_tao_skill(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += stats.hp * 0.0626;
-	stats
-}
-
-fn stats_soss_base(
-	mut stats: CharStats,
-) -> CharStats {
-	stats.crit_rate += 44.1;
-	stats.atk += 542.0;
-	stats
-}
-
-fn stats_soss_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += 0.52 * stats.em;
-	stats.atk += 0.28 * 3.0 * stats.em;
-	stats
-}
-
-fn stats_homa_base(
-	mut stats: CharStats
-) -> CharStats {
-	stats.crit_damage += 66.4;
-	stats.atk += 608.0;
-	stats
-}
-
-fn stats_homa_buff(
-	base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.hp += base.hp * 0.2;
-	stats.atk += stats.hp * 0.018;
-	stats
-}
-
-fn stats_bennett_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += 1000.0;
-	stats.dmg_bonus += 15.0;
-	stats
-}
-
-fn stats_mh_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.crit_rate += 36.0;
-	stats.dmg_bonus += 15.0;
-	stats
-}
-
-fn stats_shime_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.dmg_bonus += 50.0;
-	stats
-}
-
-fn stats_mhplus_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.crit_rate += 40.0;
-	stats.dmg_bonus += 20.0;
-	stats
-}
-
-fn stats_furina_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.dmg_bonus += 75.0;
-	stats
-}
-
-fn stats_yelan_buff(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.dmg_bonus += 25.0; // averaged out
-	stats
-}
-
-fn stats_pyro_resonance_buff(
-	base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += base.atk * 0.25;
-	stats
-}
-
-fn stats_hydro_resonance_buff(
-	base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.hp += base.hp * 0.25;
-	stats
 }
 
 // Assume we always roll into % and never flat. Ignore minrolls.
@@ -197,6 +82,8 @@ fn stats_raw(
 		crit_damage: base.crit_damage + mainstat_cd + crit_damage_rolls as f32 * 7.77,
 		dmg_bonus: base.dmg_bonus + mainstat_elemental,
 		reaction_bonus: 0.0,
+		na_bonus: 0.0,
+		ca_bonus: 0.0,
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
 	};
 	for buff in dynamic_buffs {
@@ -231,22 +118,108 @@ fn stats(
 	)
 }
 
-// The damage calculation for her CA at talent lvl. 10
-fn tao_ca_vape(
-	tao_stats: CharStats
+fn forward_vape_multiplier(
+	trigger: &CharStats
 ) -> f32 {
-	let ca_multiplier = 242.57 / 100.0;
-	let vape_multiplier = 1.5 * (1.0 + (2.78 * tao_stats.em) / (1400.0 + tao_stats.em) + tao_stats.reaction_bonus);
+	2.0 * (1.0 + (2.78 * trigger.em) / (1400.0 + trigger.em) + trigger.reaction_bonus)
+}
+
+fn shark_na_bite(
+	shark: &CharStats,
+	momentum: usize,
+	vape: bool
+) -> f32 {
+	let mut wave_bonus = momentum as f32 * 0.13 * shark.hp;
+	let na_multiplier = 52.1 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	if momentum == 3 {
+		wave_bonus += 0.391 * shark.hp;
+	}
 
 	damage(
-		tao_stats.atk * ca_multiplier,
+		shark.hp * na_multiplier,
 		1.0,
-		0.0,
-		(tao_stats.dmg_bonus) / 100.0,
-		tao_stats.crit_rate,
-		tao_stats.crit_damage,
+		wave_bonus,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
 		vape_multiplier
 	)
+}
+
+fn shark_na1(
+	shark: &CharStats,
+	vape: bool
+) -> f32 {
+	let na_multiplier = 92.5 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	damage(
+		shark.atk * na_multiplier,
+		1.0,
+		0.0,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		vape_multiplier
+	)
+}
+
+fn shark_na2(
+	shark: &CharStats,
+	vape: bool
+) -> f32 {
+	let na_multiplier = 80.3 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	damage(
+		shark.atk * na_multiplier,
+		1.0,
+		0.0,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		vape_multiplier
+	)
+}
+
+fn shark_na3(
+	shark: &CharStats,
+	vape: bool
+) -> f32 {
+	let na_multiplier = 126.1 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	damage(
+		shark.atk * na_multiplier,
+		1.0,
+		0.0,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		vape_multiplier
+	)
+}
+
+fn surfing_time_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_damage += 88.2;
+	base.atk += 542.0;
+	base
 }
 
 fn main() {
@@ -278,61 +251,62 @@ fn main() {
 		}
 	}
 
-	// Scan through all of the possible mainstat and substat
-	// combinations and look for the highest value
-	let mut max_damage = 0.0;
-	let mut max_distribution = None;
-	let mut max_stats = None;
+	// We're gonna keep track of all builds
+	let mut all_damage = Vec::new();
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
 			let stats = stats(
-				TAO_BASE,
-				stats_soss_base,		// This is the weapon base stat function
+				characters::SHARK,
+				surfing_time_base,		// This is the weapon base stat function
 				vec![					// This is a list of all the dynamic buffs
-					stats_soss_buff,
-					stats_tao_skill,
-					stats_furina_buff,
-					stats_yelan_buff,
-					stats_mh_buff,
-					stats_bennett_buff,
-					stats_pyro_resonance_buff,
-					stats_hydro_resonance_buff
+					buffs::shime,
+					buffs::furina_burst,
+					buffs::hydro_resonance,
+					buffs::instructor_share,
 				],
 				mainstats,
 				substats
 			);
 
-			let damage = tao_ca_vape(stats);
+			let mut damage = 0.0;
+			
+			// The duration of her skill seems to be around 6s idfk
+			// Just assume she bites two times after applying 3 stacks each time
+			// The last one she can only apply one stack before the skill ends
+			damage += shark_na_bite(&stats, 3, true);
+			damage += shark_na_bite(&stats, 3, true);
+			damage += shark_na_bite(&stats, 2, true);
 
-			if damage > max_damage {
-				max_damage = damage;
-
-				let mut distribution = mainstats.to_vec();
-				distribution.extend(substats.map(|x| x as f32));
-
-				max_distribution = Some(distribution);
-				max_stats = Some(stats);
-			}
+			let mut distribution = mainstats.to_vec();
+			distribution.extend(substats.map(|x| x as f32));
+			all_damage.push((damage, distribution, stats));
 		}
 	}
+	
+	// Decide target distribution
+	all_damage.sort_by_key(|x| x.0 as usize);
+	let median = all_damage.get(all_damage.len() / 2).unwrap();
+	let minimum = all_damage.first().unwrap();
+	let maximum = all_damage.last().unwrap();
+
+	// Decompose from target
+	let (damage, distribution, stats) = maximum;
 
 	// This will print the optimal build
 	// It will output the number of substat rolls denoted with 'r' at end.
-	if let Some(max_distribution) = max_distribution {
-		let stats = vec!["EM", "HP", "ATK", "BONUS%", "CR", "CD", "HP%r", "ATK%r", "EMr", "CRr", "CDr"];
-		println!("OPTIMAL ARTIFACT MAINSTATS:");
-		for i in 0..6 {
-			println!("{}\t{}", stats[i], max_distribution[i]);
-		}
-		println!("\nOPTIMAL ARTIFACT SUBSTAT ROLLS:");
-		for i in 6..11 {
-			println!("{}\t{}", stats[i], max_distribution[i]);
-		}
+	let labels = vec!["EM", "HP", "ATK", "BONUS%", "CR", "CD", "HP%r", "ATK%r", "EMr", "CRr", "CDr"];
+	println!("OPTIMAL ARTIFACT MAINSTATS:");
+	for i in 0..6 {
+		println!("{}\t{}", labels[i], distribution[i]);
+	}
+	println!("\nOPTIMAL ARTIFACT SUBSTAT ROLLS:");
+	for i in 6..11 {
+		println!("{}\t{}", labels[i], distribution[i]);
 	}
 
 	// Print a summary of the stats (incl. buffs)
 	println!("\nSTAT SUMMARY:");
-	println!("{}", max_stats.unwrap().to_string());
-	println!("CA:\t{} damage per vape", max_damage);
+	println!("{}", stats.to_string());
+	println!("DPR: {}", damage);
 }
