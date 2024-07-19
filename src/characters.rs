@@ -10,16 +10,20 @@ pub const TAO: CharStats = CharStats {
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
 	em: 0.0,
+	res_shred: 0.0,
+	constellation: 0,
 };
 
 pub const SHARK: CharStats =  CharStats {
 	hp: 15185.0,
 	atk: 182.0,
-	crit_rate: 19.2,
+	crit_rate: 24.2,
 	crit_damage: 50.0,
 	dmg_bonus: 0.0,
 	na_bonus: 0.0,
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
-	em: 0.0
+	em: 0.0,
+	res_shred: 0.0,
+	constellation: 0
 };

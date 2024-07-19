@@ -3,6 +3,7 @@ use crate::CharStats;
 /////////////////////////////
 ///////// WEAPONS ///////////
 /////////////////////////////
+
 pub fn soss_base(
 	mut stats: CharStats,
 ) -> CharStats {
@@ -11,31 +12,14 @@ pub fn soss_base(
 	stats
 }
 
-pub fn soss_buff1(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += 0.52 * stats.em;
-	stats.atk += 0.28 * 1.0 * stats.em;
-	stats
-}
-
-pub fn soss_buff2(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += 0.52 * stats.em;
-	stats.atk += 0.28 * 2.0 * stats.em;
-	stats
-}
-
-pub fn soss_buff3(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.atk += 0.52 * stats.em;
-	stats.atk += 0.28 * 3.0 * stats.em;
-	stats
+pub fn soss_buff(
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |_, mut stats| {
+		stats.atk += 0.52 * stats.em;
+		stats.atk += 0.28 * stacks as f32 * stats.em;
+		stats
+	}
 }
 
 pub fn homa_base(
@@ -80,6 +64,30 @@ pub fn surfing_time_buff(
 /////////////////////////////
 //////// CHARACTERS /////////
 /////////////////////////////
+
+pub fn shark_c1(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.constellation += 1;
+	stats
+}
+
+pub fn nahida_burst(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.em += 250.0;
+	stats
+}
+
+pub fn zhong_shred(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.res_shred += 20.0;
+	stats
+}
 
 pub fn tao_skill(
 	_base: CharStats,
@@ -141,6 +149,7 @@ pub fn hydro_resonance(
 /////////////////////////////
 //////// Artifacts //////////
 /////////////////////////////
+
 pub fn instructor2(
 	_base: CharStats,
 	mut stats: CharStats
@@ -157,7 +166,7 @@ pub fn instructor_share(
 	stats
 }
 
-pub fn mh2(
+pub fn mh2pc(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
@@ -170,12 +179,12 @@ pub fn mh(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
-	stats = mh2(_base, stats);
+	stats = mh2pc(_base, stats);
 	stats.crit_rate += 36.0;
 	stats
 }
 
-pub fn shime2(
+pub fn shime2pc(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
@@ -187,7 +196,7 @@ pub fn shime(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
-	stats = shime2(_base, stats);
+	stats = shime2pc(_base, stats);
 	stats.na_bonus += 50.0;
 	stats
 }

@@ -14,7 +14,9 @@ pub struct CharStats {
 	ca_bonus: f32,
 	reaction_bonus: f32,
 	crit_rate: f32,
-	crit_damage: f32
+	crit_damage: f32,
+	res_shred: f32,
+	constellation: usize
 }
 
 impl ToString for CharStats {
@@ -29,32 +31,6 @@ impl ToString for CharStats {
 			self.crit_damage
 		)
 	}
-}
-
-// The damage formula expressed as a multivariate function
-fn damage(
-	base_dmg: f32,
-	base_dmg_multiplier: f32,
-	additive_dmg_bonus: f32,
-	dmg_bonus: f32,
-	crit_rate: f32,
-	crit_damage: f32,
-	amplifying_reaction: f32
-) -> f32 {
-	// Effective crit multiplier evaluated as n - number of hits, approaches infinity
-	let crit = 1.0 + (crit_rate / 100.0).clamp(0.0, 1.0) * crit_damage / 100.0;
-
-	// Assume we're fighting Masanori lvl. 90 if this switch is on
-	let masanori = true;
-
-	let (enemy_def_multiplier, enemy_res_multiplier) = match masanori {
-		true => (0.5, 0.9),
-		false => (1.0, 1.0)
-	};
-
-	(base_dmg * base_dmg_multiplier + additive_dmg_bonus) *
-	(1.0 + dmg_bonus) * crit * enemy_def_multiplier *
-	enemy_res_multiplier * amplifying_reaction
 }
 
 // Assume we always roll into % and never flat. Ignore minrolls.
@@ -85,6 +61,8 @@ fn stats_raw(
 		na_bonus: 0.0,
 		ca_bonus: 0.0,
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
+		res_shred: 0.0,
+		constellation: 0
 	};
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
@@ -118,39 +96,6 @@ fn stats(
 	)
 }
 
-fn forward_vape_multiplier(
-	trigger: &CharStats
-) -> f32 {
-	2.0 * (1.0 + (2.78 * trigger.em) / (1400.0 + trigger.em) + trigger.reaction_bonus)
-}
-
-fn shark_na_bite(
-	shark: &CharStats,
-	momentum: usize,
-	vape: bool
-) -> f32 {
-	let mut wave_bonus = momentum as f32 * 0.13 * shark.hp;
-	let na_multiplier = 52.1 / 100.0;
-	let vape_multiplier = match vape {
-		true => forward_vape_multiplier(&shark),
-		false => 1.0
-	};
-
-	if momentum == 3 {
-		wave_bonus += 0.391 * shark.hp;
-	}
-
-	damage(
-		shark.hp * na_multiplier,
-		1.0,
-		wave_bonus,
-		(shark.dmg_bonus + shark.na_bonus) / 100.0,
-		shark.crit_rate,
-		shark.crit_damage,
-		vape_multiplier
-	)
-}
-
 fn main() {
 	// We want to investigate various mainstat variations
 	let arti_mainstat_distributions = [
@@ -158,11 +103,15 @@ fn main() {
 		[  561.0,  0.0,  0.0,  0.0,    0.0,  0.0   ],  // Triple EM
 		[  374.0,  0.0,  0.0,  0.0,    0.0,  62.2  ],  // Double EM + CD
 		[  374.0,  0.0,  0.0,  0.0,    31.1, 0.0   ],  // Double EM + CR
-		[  187.0,  0.0,  0.0,  46.6,   0.0,  62.2  ],  // EM + Pyro + CD
+		[  187.0,  0.0,  0.0,  46.6,   0.0,  62.2  ],  // EM + Dmg + CD
 		[  187.0,  46.6, 0.0,  0.0,    31.1, 0.0   ],  // EM + HP + CR
 		[  187.0,  46.6, 0.0,  0.0,    0.0,  62.2  ],  // EM + HP + CD
-		[  0.0,    46.6, 0.0,  46.6,   0.0,  62.2  ],  // HP + Pyro + CD
-		[  0.0,    46.6, 0.0,  46.6,   31.1, 0.0   ],  // HP + Pyro + CR
+		[  0.0,    46.6, 0.0,  46.6,   0.0,  62.2  ],  // HP + Dmg + CD
+		[  0.0,    46.6, 0.0,  46.6,   31.1, 0.0   ],  // HP + Dmg + CR
+		[  187.0,  0.0,  46.6, 0.0,    31.1, 0.0   ],  // EM + ATK + CR
+		[  187.0,  0.0,  46.6, 0.0,    0.0,  62.2  ],  // EM + ATK + CD
+		[  0.0,    0.0,  46.6, 46.6,   0.0,  62.2  ],  // ATK + Dmg + CD
+		[  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
 	];
 
 	// Assuming we have 25 rolls to distribute across substats,
@@ -181,7 +130,10 @@ fn main() {
 	}
 
 	// We're gonna keep track of all builds
-	let mut all_damage = Vec::new();
+	let mut all_damage = Vec::with_capacity(
+		arti_mainstat_distributions.len() *
+		arti_substat_distributions.len()
+	);
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
@@ -190,29 +142,17 @@ fn main() {
 				buffs::surfing_time_base,			// This is the weapon base stat function
 				vec![								// This is a list of all the dynamic buffs
 					&buffs::surfing_time_buff(3),
-					&buffs::mhplus,
-					&buffs::furina_burst,			// It's debatable if she can even vape with her
-					&buffs::hydro_resonance,
-					&buffs::instructor_share,
+					&buffs::mhplus,					// The Natlan MH set
+					&|_, mut b| {b.em += 187.0; b}, // 750 em Nahida
+					&buffs::instructor_share,		// Nahihi is on ins
+					&buffs::zhong_shred,
+					&buffs::petra_share,
 				],
 				mainstats,
 				substats
 			);
 
-			let mut damage = 0.0;
-			
-			// The duration of her skill seems to be around 6s idfk
-			// Just assume she bites two times after applying 3 stacks each time
-			// The last one she can only apply one stack before the skill ends
-			damage += shark_na_bite(&stats, 3, true);
-			damage += shark_na_bite(&stats, 3, true);
-			damage += shark_na_bite(&stats, 1, true);
-
-			// For each of these bites, she will also fire her missiles
-			// These do the same damage, but I don't think they'll vape
-			damage += shark_na_bite(&stats, 3, false);
-			damage += shark_na_bite(&stats, 3, false);
-			damage += shark_na_bite(&stats, 1, false);
+			let damage = rotations::shark_n3_vape(&stats);
 
 			let mut distribution = mainstats.to_vec();
 			distribution.extend(substats.map(|x| x as f32));
