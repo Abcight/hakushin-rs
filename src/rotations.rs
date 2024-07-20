@@ -48,7 +48,7 @@ fn forward_vape_multiplier(
 ////////// Shark ////////////
 /////////////////////////////
 
-fn shark_na_bite(
+pub fn shark_na_bite(
 	shark: &CharStats,
 	momentum: usize,
 	vape: bool
@@ -76,7 +76,7 @@ fn shark_na_bite(
 	)
 }
 
-fn shark_burst(
+pub fn shark_burst(
 	shark: &CharStats,
 	vape: bool
 ) -> f32 {
@@ -101,17 +101,17 @@ fn shark_burst(
 /// Assuming 3 vaped normals, 2 of which are enhanced to max stacks.
 /// Wrapped up with burst.
 pub fn shark_n3_vape(stats: &CharStats) -> f32 {
-    // The duration of her skill seems to be around 6s idfk
-    // Just assume she bites two times after applying 3 stacks each time
-    let mut damage = 0.0;
-    damage += shark_na_bite(&stats, 3, true);
-    damage += shark_na_bite(&stats, 3, true);
+	// The duration of her skill seems to be around 6s idfk
+	// Just assume she bites two times after applying 3 stacks each time
+	let mut damage = 0.0;
+	damage += shark_na_bite(&stats, 3, true);
+	damage += shark_na_bite(&stats, 3, true);
 
 	// We can skill twice in a rotation
 	damage += shark_na_bite(&stats, 3, true);
-    damage += shark_na_bite(&stats, 3, true);
+	damage += shark_na_bite(&stats, 3, true);
 
-    // Finish off with her burst, vaped
-    damage += shark_burst(&stats, true);
-    damage
+	// // Finish off with her burst, vaped
+	damage += shark_burst(&stats, true);
+	damage
 }

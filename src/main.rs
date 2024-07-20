@@ -22,7 +22,7 @@ pub struct CharStats {
 impl ToString for CharStats {
 	fn to_string(&self) -> String {
 		format!(
-			"STATS:\nHP: {},\nATK: {},\nEM: {},\nDMG%: {},\nCR: {},\nCD: {}\n--------------",
+			"HP: {},\nATK: {},\nEM: {},\nDMG%: {},\nCR: {},\nCD: {}\n--------------",
 			self.hp,
 			self.atk,
 			self.em,
@@ -108,10 +108,10 @@ fn main() {
 		[  187.0,  46.6, 0.0,  0.0,    0.0,  62.2  ],  // EM + HP + CD
 		[  0.0,    46.6, 0.0,  46.6,   0.0,  62.2  ],  // HP + Dmg + CD
 		[  0.0,    46.6, 0.0,  46.6,   31.1, 0.0   ],  // HP + Dmg + CR
-		[  187.0,  0.0,  46.6, 0.0,    31.1, 0.0   ],  // EM + ATK + CR
-		[  187.0,  0.0,  46.6, 0.0,    0.0,  62.2  ],  // EM + ATK + CD
-		[  0.0,    0.0,  46.6, 46.6,   0.0,  62.2  ],  // ATK + Dmg + CD
-		[  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
+		// [  187.0,  0.0,  46.6, 0.0,    31.1, 0.0   ],  // EM + ATK + CR
+		// [  187.0,  0.0,  46.6, 0.0,    0.0,  62.2  ],  // EM + ATK + CD
+		// [  0.0,    0.0,  46.6, 46.6,   0.0,  62.2  ],  // ATK + Dmg + CD
+		// [  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
 	];
 
 	// Assuming we have 25 rolls to distribute across substats,
@@ -137,13 +137,22 @@ fn main() {
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
+			let raw_stats = stats(
+				characters::SHARK,
+				buffs::surfing_time_base,			// This is the weapon base stat function
+				vec![								// This is a list of all the dynamic buffs
+				],
+				mainstats,
+				substats
+			);
+
 			let stats = stats(
 				characters::SHARK,
 				buffs::surfing_time_base,			// This is the weapon base stat function
 				vec![								// This is a list of all the dynamic buffs
-					&buffs::surfing_time_buff(3),
+					&buffs::surfing_time_buff(1, 4),
 					&buffs::mhplus,					// The Natlan MH set
-					&|_, mut b| {b.em += 187.0; b}, // 750 em Nahida
+					&buffs::nahida_burst,
 					&buffs::instructor_share,		// Nahihi is on ins
 					&buffs::zhong_shred,
 					&buffs::petra_share,

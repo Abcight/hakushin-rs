@@ -4,6 +4,26 @@ use crate::CharStats;
 ///////// WEAPONS ///////////
 /////////////////////////////
 
+pub fn sac_jade_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.crit_rate += 36.8;
+	stats.atk += 454.0;
+	stats
+}
+
+pub fn sac_jade_buff(
+	refinement: usize,
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.hp += base.hp * (24.0 + refinement as f32 * 8.0) / 100.0;
+		stats.em = 30.0 + refinement as f32 * 10.0;
+		stats
+	}
+}
+
 pub fn soss_base(
 	mut stats: CharStats,
 ) -> CharStats {
@@ -52,11 +72,101 @@ pub fn surfing_time_base(
 }
 
 pub fn surfing_time_buff(
+	refinement: usize,
 	stacks: usize
 ) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	assert!(stacks <= 4);
+	let hp_boost = 15.0 + 5.0 * refinement as f32;	// 20% R1, 5% per
+	let na_stack = 9.0 + 3.0 * refinement as f32;	// 12% R1, 3% per
+	move |base, mut stats| {
+		stats.hp += hp_boost / 100.0 * base.hp;
+		stats.na_bonus += na_stack * stacks as f32;
+		stats
+	}
+}
+
+pub fn solar_pearl_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_rate += 27.6;
+	base.atk += 510.0;
+	base
+}
+
+pub fn solar_pearl_buff(
+	refinement: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
 	move |_, mut stats| {
-		stats.hp += 20.0;
-		stats.na_bonus += 12.0 * stacks as f32;
+		stats.na_bonus += 15.0 + 5.0 * refinement as f32;
+		stats
+	}
+}
+
+pub fn tulaytullah_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_damage += 44.1;
+	base.atk += 674.0;
+	base
+}
+
+pub fn tulaytullah_buff(
+	refinement: usize,
+	stacks_time: usize,
+	stacks_hit: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	let na_stack = 3.6 + refinement as f32 * 1.2;	// 4.8 at R1, 1.2 per
+	let na_hit = 7.2 + refinement as f32 * 2.4;		// 9.6 at R1, 2.4 per
+	move |_, mut stats| {
+		stats.na_bonus += na_stack * stacks_time as f32;
+		stats.na_bonus += na_hit * stacks_hit as f32;
+		stats
+	}
+}
+
+pub fn prayer_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_rate += 33.1;
+	base.atk += 608.0;
+	base
+}
+
+pub fn prayer_buff(
+	refinement: usize,
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |_, mut stats| {
+		stats.dmg_bonus += (6.0 + 2.0 * refinement as f32) * stacks as f32;
+		stats
+	}
+}
+
+pub fn ceiba_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.hp += 0.413 * base.hp;
+	base.atk += 510.0;
+	base
+}
+
+pub fn ceiba_buff(
+	refinement: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		let max_increase = 12.0 + 4.0 * refinement as f32;
+		let increase = 5.0 * (base.hp / 1000.0); // 5% per every 1000hp
+		stats.na_bonus += increase.clamp(0.0, max_increase);
 		stats
 	}
 }
@@ -77,7 +187,7 @@ pub fn nahida_burst(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
-	stats.em += 250.0;
+	stats.em += 200.0; // 800 em Nahida
 	stats
 }
 
@@ -149,6 +259,33 @@ pub fn hydro_resonance(
 /////////////////////////////
 //////// Artifacts //////////
 /////////////////////////////
+
+pub fn hod2pc(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.dmg_bonus += 15.0;
+	stats
+}
+
+pub fn hod(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats = hod2pc(base, stats);
+	stats.na_bonus += 30.0;
+	stats.ca_bonus += 30.0;
+	stats
+}
+
+pub fn bollide(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.na_bonus += 40.0;
+	stats.ca_bonus += 40.0;
+	stats
+}
 
 pub fn instructor2(
 	_base: CharStats,
