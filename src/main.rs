@@ -1,6 +1,9 @@
+use buffs::MagicBoxed;
+
 mod buffs;
 mod characters;
 mod rotations;
+mod calculators;
 
 // We'll be generating these algorithmically to find
 // the best possible outcome
@@ -15,8 +18,7 @@ pub struct CharStats {
 	reaction_bonus: f32,
 	crit_rate: f32,
 	crit_damage: f32,
-	res_shred: f32,
-	constellation: usize
+	res_shred: f32
 }
 
 impl ToString for CharStats {
@@ -36,7 +38,7 @@ impl ToString for CharStats {
 // Assume we always roll into % and never flat. Ignore minrolls.
 fn stats_raw(
 	base: CharStats,
-	weapon: fn(CharStats) -> CharStats,
+	weapon: impl Fn(CharStats) -> CharStats,
 	dynamic_buffs: Vec<&dyn Fn(CharStats, CharStats) -> CharStats>,
 	mainstat_em: f32,
 	mainstat_hp: f32,
@@ -52,7 +54,7 @@ fn stats_raw(
 ) -> CharStats {
 	let base = weapon(base);
 	let mut dynamic = CharStats {
-		hp: 4780.0 + base.hp * (1.0 + (hp_rolls as f32 * 5.83) / 100.0 + mainstat_hp / 100.0),
+		hp: 4780.0 + base.hp + base.hp * (hp_rolls as f32 * 5.83 + mainstat_hp) / 100.0,
 		atk: 311.0 + base.atk * (1.0 + (atk_rolls as f32 * 5.83) / 100.0 + mainstat_atk / 100.0),
 		crit_rate: base.crit_rate + mainstat_cr + crit_rate_rolls as f32 * 3.89,
 		crit_damage: base.crit_damage + mainstat_cd + crit_damage_rolls as f32 * 7.77,
@@ -61,8 +63,7 @@ fn stats_raw(
 		na_bonus: 0.0,
 		ca_bonus: 0.0,
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
-		res_shred: 0.0,
-		constellation: 0
+		res_shred: 0.0
 	};
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
@@ -73,9 +74,9 @@ fn stats_raw(
 // A wrapper over stats_raw that decomposes parameters from vectors
 fn stats(
 	base: CharStats,
-	weapon: fn(CharStats) -> CharStats,
+	weapon: impl Fn(CharStats) -> CharStats,
 	dynamic_buffs: Vec<&dyn Fn(CharStats, CharStats) -> CharStats>,
-	mainstats: [f32; 6],
+	mainstats: &[f32; 6],
 	rolls: &[usize; 5],
 ) -> CharStats {
 	stats_raw(
@@ -98,7 +99,7 @@ fn stats(
 
 fn main() {
 	// We want to investigate various mainstat variations
-	let arti_mainstat_distributions = [
+	let arti_mainstat_distributions = vec![
 		// EM      HP    ATK   BONUS%  CR    CD
 		[  561.0,  0.0,  0.0,  0.0,    0.0,  0.0   ],  // Triple EM
 		[  374.0,  0.0,  0.0,  0.0,    0.0,  62.2  ],  // Double EM + CD
@@ -114,20 +115,53 @@ fn main() {
 		// [  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
 	];
 
-	// Assuming we have 25 rolls to distribute across substats,
+	// Assuming we have n max-rolls to distribute across substats,
 	// find all possible substat combinations (ignore minrolls)
+	let num_maxrolls = 16;
 	let mut arti_substat_distributions = Vec::new();
-	for hp in 0..26 {
-		for atk in 0..(26-hp) {
-			for em in 0..(26-atk-hp) {
-				for cr in 0..(26-atk-hp-em) {
-					for cd in 0..(26-atk-hp-em-cr) {
+	for hp in 0..(1+num_maxrolls) {
+		for atk in 0..(1+num_maxrolls-hp) {
+			for em in 0..(1+num_maxrolls-atk-hp) {
+				for cr in 0..(1+num_maxrolls-atk-hp-em) {
+					for cd in 0..(1+num_maxrolls-atk-hp-em-cr) {
 						arti_substat_distributions.push([hp, atk, em, cr, cd]);
 					}
 				}
 			}
 		}
 	}
+
+	// let weapons: Vec<(&str, &dyn Fn(CharStats) -> CharStats, Box<dyn Fn(CharStats, CharStats) -> CharStats>)> = vec![
+	// 	("Surfing Time R1", &buffs::surfing_time_base, buffs::surfing_time_buff(1, 4).boxed()),
+	// 	("Surfing Time R5", &buffs::surfing_time_base, buffs::surfing_time_buff(5, 4).boxed()),
+	// 	("Sacrificial Jade R1", &buffs::sac_jade_base, buffs::sac_jade_buff(1).boxed()),
+	// 	("Sacrificial Jade R5", &buffs::sac_jade_base, buffs::sac_jade_buff(5).boxed()),
+	// 	("Ring of Ceiba R1", &buffs::ceiba_base, buffs::ceiba_buff(1).boxed()),
+	// 	("Ring of Ceiba R5", &buffs::ceiba_base, buffs::ceiba_buff(5).boxed()),
+	// 	("Solar Pearl R1", &buffs::solar_pearl_base, buffs::solar_pearl_buff(1).boxed()),
+	// 	("Solar Pearl R5", &buffs::solar_pearl_base, buffs::solar_pearl_buff(5).boxed()),
+	// 	("The Widsith R1 [ATK]", &buffs::widsith_base, buffs::widsith_buff(1, 0).boxed()),
+	// 	("The Widsith R1 [DMG]", &buffs::widsith_base, buffs::widsith_buff(1, 1).boxed()),
+	// 	("The Widsith R1 [EM]", &buffs::widsith_base, buffs::widsith_buff(1, 2).boxed()),
+	// 	("The Widsith R1 [None]", &buffs::widsith_base, buffs::widsith_buff(1, 3).boxed()),
+	// 	("The Widsith R5 [ATK]", &buffs::widsith_base, buffs::widsith_buff(5, 0).boxed()),
+	// 	("The Widsith R5 [DMG]", &buffs::widsith_base, buffs::widsith_buff(5, 1).boxed()),
+	// 	("The Widsith R5 [EM]", &buffs::widsith_base, buffs::widsith_buff(5, 2).boxed()),
+	// 	("The Widsith R5 [None]", &buffs::widsith_base, buffs::widsith_buff(5, 3).boxed()),
+	// 	("Floating Dreams R1", &buffs::floating_dreams_base, buffs::floating_dreams_buff(1, 0, 3).boxed()),
+	// 	("Floating Dreams R5", &buffs::floating_dreams_base, buffs::floating_dreams_buff(5, 0, 3).boxed()),
+	// 	("Tome of Eternal Flow R1", &buffs::tome_base, buffs::tome_buff(1, 0).boxed()),
+	// 	("Tome of Eternal Flow R5", &buffs::tome_base, buffs::tome_buff(5, 0).boxed()),
+	// ];
+
+	// calculators::weapon_calculator(
+	// 	weapons,
+	// 	arti_mainstat_distributions,
+	// 	arti_substat_distributions,
+	// 	|mainstats, substats, base, buff| {
+	// 		rotations::shark_nahida_xiang_zhong(mainstats, substats, base, buff)
+	// 	}
+	// )
 
 	// We're gonna keep track of all builds
 	let mut all_damage = Vec::with_capacity(
@@ -137,35 +171,16 @@ fn main() {
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
-			let raw_stats = stats(
-				characters::SHARK,
-				buffs::surfing_time_base,			// This is the weapon base stat function
-				vec![								// This is a list of all the dynamic buffs
-				],
-				mainstats,
-				substats
+			let damage = rotations::shark_nahida_xiang_zhong(
+				&mainstats,
+				&substats,
+				buffs::sac_jade_base, 
+				buffs::sac_jade_buff(5)
 			);
-
-			let stats = stats(
-				characters::SHARK,
-				buffs::surfing_time_base,			// This is the weapon base stat function
-				vec![								// This is a list of all the dynamic buffs
-					&buffs::surfing_time_buff(1, 4),
-					&buffs::mhplus,					// The Natlan MH set
-					&buffs::nahida_burst,
-					&buffs::instructor_share,		// Nahihi is on ins
-					&buffs::zhong_shred,
-					&buffs::petra_share,
-				],
-				mainstats,
-				substats
-			);
-
-			let damage = rotations::shark_n3_vape(&stats);
 
 			let mut distribution = mainstats.to_vec();
 			distribution.extend(substats.map(|x| x as f32));
-			all_damage.push((damage, distribution, stats));
+			all_damage.push((damage, distribution));
 		}
 	}
 	
@@ -176,7 +191,7 @@ fn main() {
 	let maximum = all_damage.last().unwrap();
 
 	// Decompose from target
-	let (damage, distribution, stats) = maximum;
+	let (damage, distribution) = maximum;
 
 	// This will print the optimal build
 	// It will output the number of substat rolls denoted with 'r' at end.
@@ -191,7 +206,5 @@ fn main() {
 	}
 
 	// Print a summary of the stats (incl. buffs)
-	println!("\nSTAT SUMMARY:");
-	println!("{}", stats.to_string());
 	println!("DPR: {}", damage);
 }

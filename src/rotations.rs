@@ -1,4 +1,4 @@
-use crate::CharStats;
+use crate::*;
 
 /////////////////////////////
 ///////// Common ////////////
@@ -48,7 +48,35 @@ fn forward_vape_multiplier(
 ////////// Shark ////////////
 /////////////////////////////
 
-pub fn shark_na_bite(
+pub fn v2shark_na_bite(
+	shark: &CharStats,
+	momentum: usize,
+	vape: bool
+) -> f32 {
+	let mut wave_bonus = momentum as f32 * 0.11 * shark.hp;
+	let na_multiplier = 22.637 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	if momentum == 3 {
+		wave_bonus += 0.56592 * shark.hp;
+	}
+
+	damage(
+		shark.hp * na_multiplier,
+		1.0,
+		wave_bonus,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		shark.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+pub fn v1shark_na_bite(
 	shark: &CharStats,
 	momentum: usize,
 	vape: bool
@@ -100,20 +128,66 @@ pub fn shark_burst(
 
 /// Assuming 3 vaped normals, 2 of which are enhanced to max stacks.
 /// Wrapped up with burst.
-pub fn shark_n3_vape(stats: &CharStats) -> f32 {
+pub fn shark_n3_vape(first_e_stats: &CharStats, second_e_stats: &CharStats) -> f32 {
 	// The duration of her skill seems to be around 6s idfk
 	// Just assume she bites two times after applying 3 stacks each time
 	let mut damage = 0.0;
-	damage += shark_na_bite(&stats, 3, true);
-	damage += shark_na_bite(&stats, 3, true);
+	damage += v2shark_na_bite(&first_e_stats, 0, true);
+	damage += v2shark_na_bite(&first_e_stats, 3, true);
+	damage += v2shark_na_bite(&first_e_stats, 3, true);
 
 	// We can skill twice in a rotation
-	damage += shark_na_bite(&stats, 3, true);
-	damage += shark_na_bite(&stats, 3, true);
+	damage += v2shark_na_bite(&second_e_stats, 0, true);
+	damage += v2shark_na_bite(&second_e_stats, 3, true);
+	damage += v2shark_na_bite(&second_e_stats, 3, true);
 
-	// // Finish off with her burst, vaped
-	damage += shark_burst(&stats, true);
+	// Use the burst either as an opening move
+	// or as a finisher, depending which is better
+	let burst = f32::max(
+		shark_burst(&first_e_stats, true),
+		shark_burst(&second_e_stats, true)
+	);
+	damage += burst;
 	damage
+}
+
+pub fn shark_nahida_xiang_zhong(
+	mainstats: &[f32; 6],
+	substats: &[usize; 5],
+	base: impl Fn(CharStats) -> CharStats,
+	buff: impl Fn(CharStats, CharStats) -> CharStats
+) -> f32 {
+	let stats1 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::mhplus,					// The Natlan MH set
+			&buffs::nahida_burst,
+			&buffs::scrl(false),			// Xiangling is on scroll
+			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::zhong_shred,
+			&buffs::petra_share,
+		],
+		mainstats,
+		substats
+	);
+
+	let stats2 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::mhplus,					// The Natlan MH set
+			&buffs::nahida_burst,
+			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::zhong_shred,
+		],
+		mainstats,
+		substats
+	);
+
+	shark_n3_vape(&stats1, &stats2)
 }
 
 /////////////////////////////

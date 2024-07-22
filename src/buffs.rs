@@ -4,6 +4,20 @@ use crate::CharStats;
 ///////// WEAPONS ///////////
 /////////////////////////////
 
+pub trait MagicBoxed {
+	type Source;
+	type Target;
+	fn boxed(self) -> Self::Target;
+}
+
+impl<T: Fn(CharStats, CharStats) -> CharStats + 'static> MagicBoxed for T {
+	type Source = T;
+	type Target = Box<dyn Fn(CharStats, CharStats) -> CharStats>;
+	fn boxed(self) -> Self::Target {
+		Box::new(self)
+	}
+}
+
 pub fn sac_jade_base(
 	mut stats: CharStats,
 ) -> CharStats {
@@ -18,7 +32,7 @@ pub fn sac_jade_buff(
 	assert!(refinement >= 1);
 	assert!(refinement <= 5);
 	move |base, mut stats| {
-		stats.hp += base.hp * (24.0 + refinement as f32 * 8.0) / 100.0;
+		stats.hp += base.hp * (0.24 + refinement as f32 * 0.08);
 		stats.em = 30.0 + refinement as f32 * 10.0;
 		stats
 	}
@@ -87,6 +101,28 @@ pub fn surfing_time_buff(
 	}
 }
 
+pub fn tome_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_damage += 88.2;
+	base.atk += 542.0;
+	base
+}
+
+pub fn tome_buff(
+	refinement: usize,
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	assert!(stacks <= 3);
+	move |base, mut stats| {
+		stats.hp += (0.12 + 0.04 * refinement as f32) * base.hp;
+		stats.ca_bonus += (10.0 + 4.0 * refinement as f32) * stacks as f32;
+		stats
+	}
+}
+
 pub fn solar_pearl_base(
 	mut base: CharStats,
 ) -> CharStats {
@@ -102,6 +138,56 @@ pub fn solar_pearl_buff(
 	assert!(refinement <= 5);
 	move |_, mut stats| {
 		stats.na_bonus += 15.0 + 5.0 * refinement as f32;
+		stats
+	}
+}
+
+pub fn widsith_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.crit_damage += 55.1;
+	base.atk += 510.0;
+	base
+}
+
+pub fn floating_dreams_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.em += 265.0;
+	base.atk += 542.0;
+	base
+}
+
+pub fn floating_dreams_buff(
+	refinement: usize,
+	same_types_count: usize,
+	other_types_count: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	
+	move |_, mut stats| {
+		stats.em += (24.0 + 8.0 * refinement as f32) * same_types_count as f32;
+		stats.dmg_bonus += (6.0 + 4.0 * refinement as f32) * other_types_count as f32;
+		stats
+	}
+}
+
+pub fn widsith_buff(
+	refinement: usize,
+	variant: usize,
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		match variant {
+			0 => stats.atk += (0.45 + 0.15 * refinement as f32) * base.atk,
+			1 => stats.dmg_bonus += 36.0 + 12.0 * refinement as f32,
+			2 => stats.em += 180.0 + 60.0 * refinement as f32,
+			3 => (),
+			_ => panic!("Invalid Widsith variant!")
+		}
+		stats.atk += (0.45 + 0.15 * refinement as f32) * base.atk;
 		stats
 	}
 }
@@ -153,8 +239,8 @@ pub fn prayer_buff(
 pub fn ceiba_base(
 	mut base: CharStats,
 ) -> CharStats {
-	base.hp += 0.413 * base.hp;
 	base.atk += 510.0;
+	// the hp% buff doesn't count as base hp, moved into the buff section
 	base
 }
 
@@ -165,7 +251,8 @@ pub fn ceiba_buff(
 	assert!(refinement <= 5);
 	move |base, mut stats| {
 		let max_increase = 12.0 + 4.0 * refinement as f32;
-		let increase = 5.0 * (base.hp / 1000.0); // 5% per every 1000hp
+		let increase = (0.5 + 0.1 * refinement as f32) * (stats.hp / 1000.0).floor(); // 5% per every 1000hp
+		stats.hp += 0.413 * base.hp;
 		stats.na_bonus += increase.clamp(0.0, max_increase);
 		stats
 	}
@@ -174,14 +261,6 @@ pub fn ceiba_buff(
 /////////////////////////////
 //////// CHARACTERS /////////
 /////////////////////////////
-
-pub fn shark_c1(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.constellation += 1;
-	stats
-}
 
 pub fn nahida_burst(
 	_base: CharStats,
@@ -278,8 +357,28 @@ pub fn hod(
 	stats
 }
 
+pub fn gilded2pc(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.em += 80.0;
+	stats
+}
+
+pub fn gilded(
+	same_type: usize,
+	other_type: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |base, stats| {
+		let mut stats = gilded2pc(base, stats);
+		stats.atk += 0.14 * same_type as f32 * base.atk;
+		stats.em += 50.0 * other_type as f32;
+		stats
+	}
+}
+
 pub fn bollide(
-	base: CharStats,
+	_: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
 	stats.na_bonus += 40.0;
@@ -343,16 +442,20 @@ pub fn mhplus(
 	mut stats: CharStats
 ) -> CharStats {
 	stats.crit_rate += 40.0;
-	stats.dmg_bonus += 20.0;
+	stats.dmg_bonus += 15.0;
 	stats
 }
 
 pub fn scrl(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.dmg_bonus += 45.0;
-	stats
+	saurian: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |_, mut stats| {
+		stats.dmg_bonus += 12.0;
+		if saurian {
+			stats.dmg_bonus += 28.0;
+		}
+		stats
+	}
 }
 
 pub fn petra_share(

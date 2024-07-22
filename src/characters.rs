@@ -10,8 +10,7 @@ pub const TAO: CharStats = CharStats {
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
 	em: 0.0,
-	res_shred: 0.0,
-	constellation: 0,
+	res_shred: 0.0
 };
 
 pub const SHARK: CharStats =  CharStats {
@@ -24,6 +23,5 @@ pub const SHARK: CharStats =  CharStats {
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
 	em: 0.0,
-	res_shred: 0.0,
-	constellation: 0
+	res_shred: 0.0
 };
