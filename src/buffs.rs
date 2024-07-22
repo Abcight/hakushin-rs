@@ -322,10 +322,10 @@ pub fn mh(
 }
 
 pub fn shime2pc(
-	_base: CharStats,
+	base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
-	stats.atk += 18.0;
+	stats.atk += 0.18 * base.atk;
 	stats
 }
 

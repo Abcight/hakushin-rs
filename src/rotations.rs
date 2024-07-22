@@ -115,3 +115,12 @@ pub fn shark_n3_vape(stats: &CharStats) -> f32 {
 	damage += shark_burst(&stats, true);
 	damage
 }
+
+/////////////////////////////
+/////////// Tao /////////////
+/////////////////////////////
+
+/// Assuming 11 vaped normals, 11 vaped CAs, burst.
+pub fn tao_benny_vape(stats: &CharStats) -> f32 {
+	todo!()
+}
