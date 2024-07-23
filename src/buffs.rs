@@ -263,10 +263,27 @@ pub fn ceiba_buff(
 /////////////////////////////
 
 pub fn nahida_burst(
+	em: f32
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |_, mut stats| {
+		stats.em += 0.25 * em;
+		stats
+	}
+}
+
+pub fn vv_shred(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {
-	stats.em += 200.0; // 800 em Nahida
+	stats.res_shred += 40.0;
+	stats
+}
+
+pub fn kazuha_e(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.dmg_bonus += 36.0; // 900 em kazuha
 	stats
 }
 
@@ -410,6 +427,23 @@ pub fn instructor_share(
 	stats
 }
 
+pub fn albedo_burst(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.em += 120.0;
+	stats
+}
+
+pub fn yun_burst(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.na_bonus += 12.0;
+	stats.na_bonus_flat += 1660.0; // ~ 2100 DEF
+	stats
+}
+
 pub fn mh2pc(
 	_base: CharStats,
 	mut stats: CharStats
@@ -445,7 +479,7 @@ pub fn shime(
 	stats
 }
 
-pub fn mhplus(
+pub fn obsidian(
 	_base: CharStats,
 	mut stats: CharStats
 ) -> CharStats {

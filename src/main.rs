@@ -14,6 +14,7 @@ pub struct CharStats {
 	em: f32,
 	dmg_bonus: f32,
 	na_bonus: f32,
+	na_bonus_flat: f32,
 	ca_bonus: f32,
 	reaction_bonus: f32,
 	crit_rate: f32,
@@ -63,7 +64,8 @@ fn stats_raw(
 		na_bonus: 0.0,
 		ca_bonus: 0.0,
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
-		res_shred: 0.0
+		res_shred: 0.0,
+		na_bonus_flat: 0.0,
 	};
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
@@ -161,7 +163,7 @@ fn main() {
 	// 	|mainstats, substats, base, buff| {
 	// 		rotations::shark_nahida_xiang_zhong(mainstats, substats, base, buff)
 	// 	}
-	// )
+	// );
 
 	// We're gonna keep track of all builds
 	let mut all_damage = Vec::with_capacity(
@@ -171,7 +173,7 @@ fn main() {
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
-			let damage = rotations::shark_nahida_thoma_zhong(
+			let damage = rotations::shark_zhong_thoma_kazuha(
 				&mainstats,
 				&substats,
 				buffs::sac_jade_base, 

@@ -65,7 +65,7 @@ pub fn v2shark_na_bite(
 	}
 
 	damage(
-		shark.hp * na_multiplier,
+		shark.hp * na_multiplier + shark.na_bonus_flat,
 		1.0,
 		wave_bonus,
 		(shark.dmg_bonus + shark.na_bonus) / 100.0,
@@ -162,10 +162,10 @@ pub fn shark_nahida_xiang_zhong(
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::mhplus,					// The Natlan MH set
-			&buffs::nahida_burst,
+			&buffs::obsidian,
+			&buffs::nahida_burst(800.0),
 			&buffs::scrl(false),			// Xiangling is on scroll
-			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::instructor_share,		// Nahida is on ins
 			&buffs::zhong_shred,
 			&buffs::petra_share,
 		],
@@ -178,9 +178,9 @@ pub fn shark_nahida_xiang_zhong(
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::mhplus,					// The Natlan MH set
-			&buffs::nahida_burst,
-			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::obsidian,
+			&buffs::nahida_burst(800.0),
+			&buffs::instructor_share,		// Nahida is on ins
 			&buffs::zhong_shred,
 		],
 		mainstats,
@@ -190,7 +190,7 @@ pub fn shark_nahida_xiang_zhong(
 	shark_n3_vape(&stats1, &stats2)
 }
 
-pub fn shark_nahida_thoma_zhong(
+pub fn shark_zhong_thoma_kazuha(
 	mainstats: &[f32; 6],
 	substats: &[usize; 5],
 	base: impl Fn(CharStats) -> CharStats,
@@ -201,12 +201,13 @@ pub fn shark_nahida_thoma_zhong(
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::mhplus,					// The Natlan MH set
-			&buffs::nahida_burst,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
 			&buffs::thoma_c6,
-			&buffs::instructor_share,		// Nahihi is on ins
 			&buffs::zhong_shred,
 			&buffs::petra_share,
+			&buffs::scrl(false)				// Thoma is on scroll
 		],
 		mainstats,
 		substats
@@ -217,11 +218,13 @@ pub fn shark_nahida_thoma_zhong(
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::mhplus,					// The Natlan MH set
-			&buffs::nahida_burst,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
 			&buffs::thoma_c6,
-			&buffs::instructor_share,		// Nahihi is on ins
 			&buffs::zhong_shred,
+			&buffs::petra_share,
+			&buffs::scrl(false)				// Thoma is on scroll
 		],
 		mainstats,
 		substats
