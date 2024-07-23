@@ -32,8 +32,8 @@ pub fn sac_jade_buff(
 	assert!(refinement >= 1);
 	assert!(refinement <= 5);
 	move |base, mut stats| {
-		stats.hp += base.hp * (0.24 + refinement as f32 * 0.08);
-		stats.em = 30.0 + refinement as f32 * 10.0;
+		stats.hp += base.hp * (0.24 + 0.08 * refinement as f32);
+		stats.em = 30.0 + 10.0 * refinement as f32;
 		stats
 	}
 }
@@ -267,6 +267,14 @@ pub fn nahida_burst(
 	mut stats: CharStats
 ) -> CharStats {
 	stats.em += 200.0; // 800 em Nahida
+	stats
+}
+
+pub fn thoma_c6(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.na_bonus += 15.0;
 	stats
 }
 

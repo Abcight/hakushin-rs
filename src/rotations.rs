@@ -190,6 +190,46 @@ pub fn shark_nahida_xiang_zhong(
 	shark_n3_vape(&stats1, &stats2)
 }
 
+pub fn shark_nahida_thoma_zhong(
+	mainstats: &[f32; 6],
+	substats: &[usize; 5],
+	base: impl Fn(CharStats) -> CharStats,
+	buff: impl Fn(CharStats, CharStats) -> CharStats
+) -> f32 {
+	let stats1 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::mhplus,					// The Natlan MH set
+			&buffs::nahida_burst,
+			&buffs::thoma_c6,
+			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::zhong_shred,
+			&buffs::petra_share,
+		],
+		mainstats,
+		substats
+	);
+
+	let stats2 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::mhplus,					// The Natlan MH set
+			&buffs::nahida_burst,
+			&buffs::thoma_c6,
+			&buffs::instructor_share,		// Nahihi is on ins
+			&buffs::zhong_shred,
+		],
+		mainstats,
+		substats
+	);
+
+	shark_n3_vape(&stats1, &stats2)
+}
+
 /////////////////////////////
 /////////// Tao /////////////
 /////////////////////////////

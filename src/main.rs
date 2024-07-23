@@ -117,7 +117,7 @@ fn main() {
 
 	// Assuming we have n max-rolls to distribute across substats,
 	// find all possible substat combinations (ignore minrolls)
-	let num_maxrolls = 16;
+	let num_maxrolls = 12;
 	let mut arti_substat_distributions = Vec::new();
 	for hp in 0..(1+num_maxrolls) {
 		for atk in 0..(1+num_maxrolls-hp) {
@@ -171,7 +171,7 @@ fn main() {
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
-			let damage = rotations::shark_nahida_xiang_zhong(
+			let damage = rotations::shark_nahida_thoma_zhong(
 				&mainstats,
 				&substats,
 				buffs::sac_jade_base, 
