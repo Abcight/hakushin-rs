@@ -18,6 +18,147 @@ impl<T: Fn(CharStats, CharStats) -> CharStats + 'static> MagicBoxed for T {
 	}
 }
 
+/// CLAYMORES ///
+pub fn earth_shaker_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 565.0;
+	stats
+}
+
+pub fn earth_shaker_buff(
+	refinement: usize,
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.atk += base.atk * 0.276;
+		stats.skill_dmg_bonus += 12.0 + 4.0 * refinement as f32;
+		stats
+	}
+}
+
+pub fn tidal_shadow_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 510.0;
+	stats
+}
+
+pub fn tidal_shadow_buff(
+	refinement: usize,
+	healed: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.atk += base.atk * 0.413;
+		if healed {
+			stats.atk += base.atk * (0.18 + 0.6 * refinement as f32);
+		}
+		stats
+	}
+}
+
+pub fn mailed_flower_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 565.0;
+	stats.em += 110.0;
+	stats
+}
+
+pub fn mailed_flower_buff(
+	refinement: usize,
+	buff: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		if buff {
+			stats.atk += base.atk * (0.9 + 0.3 * refinement as f32);
+			stats.em += 36.0 + 12.0 * refinement as f32;
+		}
+		stats
+	}
+}
+
+pub fn serpent_spine_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 510.0;
+	stats.crit_rate += 27.6;
+	stats
+}
+
+pub fn serpent_spine_buff(
+	refinement: usize,
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	assert!(stacks <= 5);
+	move |_, mut stats| {
+		let per_stack_increase = 5.0 + refinement as f32;
+		stats.dmg_bonus += per_stack_increase * stacks as f32;
+		stats
+	}
+}
+
+pub fn rainslasher_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 510.0;
+	stats.em += 165.0;
+	stats
+}
+
+pub fn rainslasher_buff(
+	refinement: usize,
+	buff: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |_, mut stats| {
+		if buff {
+			stats.dmg_bonus += 16.0 + 4.0 * refinement as f32;
+		}
+		stats
+	}
+}
+
+pub fn sun_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 741.0;
+	stats.crit_rate += 11.0;
+	stats
+}
+
+pub fn sun_buff(
+	refinement: usize,
+	buff: bool,
+	blessing: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		if buff {
+			let mut atk_buff = base.atk * (0.21 + 0.7 * refinement as f32);
+			let mut crit_dmg_buff = 15.0 + 5.0 * refinement as f32;
+			if blessing {
+				atk_buff *= 1.75;
+				crit_dmg_buff *= 1.75;
+			}
+			stats.atk += atk_buff;
+			stats.crit_damage += crit_dmg_buff;
+		}
+		stats
+	}
+}
+
+/// CATALYSTS ///
+
 pub fn empty_base(
 	mut base: CharStats,
 ) -> CharStats {
@@ -362,6 +503,14 @@ pub fn nahida_burst(
 		stats.em += 0.25 * em;
 		stats
 	}
+}
+
+pub fn xilonen_shred(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.res_shred += 36.0;
+	stats
 }
 
 pub fn vv_shred(

@@ -13,6 +13,7 @@ pub struct CharStats {
 	atk: f32,
 	em: f32,
 	dmg_bonus: f32,
+	skill_dmg_bonus: f32,
 	na_bonus: f32,
 	na_bonus_flat: f32,
 	skill_bonus: f32,
@@ -128,6 +129,7 @@ fn stats_raw(
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
 		res_shred: 0.0,
 		na_bonus_flat: 0.0,
+		skill_dmg_bonus: 0.0,
 	};
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
@@ -228,6 +230,21 @@ fn main() {
 		("Dragon's Bane R5", &buffs::dragons_base, buffs::dragons_buff(5).boxed()),
 		("Missive Windspear R1", &buffs::missive_base, buffs::missive_buff(1).boxed()),
 		("Missive Windspear R5", &buffs::missive_base, buffs::missive_buff(5).boxed()),
+	];
+
+	let claymores: Vec<(&str, &dyn Fn(CharStats) -> CharStats, Box<dyn Fn(CharStats, CharStats) -> CharStats>)> = vec![
+		("Earth Shaker R1", &buffs::earth_shaker_base, buffs::earth_shaker_buff(1).boxed()),
+		("Earth Shaker R5", &buffs::earth_shaker_base, buffs::earth_shaker_buff(5).boxed()),
+		("Tidal Shadow R1", &buffs::tidal_shadow_base, buffs::tidal_shadow_buff(1, true).boxed()),
+		("Tidal Shadow R5", &buffs::tidal_shadow_base, buffs::tidal_shadow_buff(5, true).boxed()),
+		("Mailed Flower R1", &buffs::mailed_flower_base, buffs::mailed_flower_buff(1, true).boxed()),
+		("Mailed Flower R5", &buffs::mailed_flower_base, buffs::mailed_flower_buff(5, true).boxed()),
+		("Serpent Spine R1", &buffs::serpent_spine_base, buffs::serpent_spine_buff(1, 5).boxed()),
+		("Serpent Spine R5", &buffs::serpent_spine_base, buffs::serpent_spine_buff(5, 5).boxed()),
+		("Rainslasher R1", &buffs::rainslasher_base, buffs::rainslasher_buff(1, true).boxed()),
+		("Rainslasher R5", &buffs::rainslasher_base, buffs::rainslasher_buff(5, true).boxed()),
+		("Sun R1", &buffs::sun_base, buffs::sun_buff(1, true, true).boxed()),
+		("Sun R5", &buffs::sun_base, buffs::sun_buff(5, true, true).boxed()),
 	];
 
 	// calculators::weapon_calculator(

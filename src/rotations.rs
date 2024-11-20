@@ -219,58 +219,123 @@ pub fn shark_yelan_xl_zhong(
 	shark_vape(&stats)
 }
 
-/////////////////////////////
-////////// Emilie ///////////
-/////////////////////////////
-
-fn emilie_lumidouce_case(char: &CharStats) -> f32 {
-	let bonus = (char.atk / 1000.0).floor().min(3.0) * 0.15;
-	let puff_multiplier = 151.2 / 100.0 * 2.0;
-
-	let puff_damage = damage(
-		char.atk * puff_multiplier,
-		1.0,
-		bonus,
-		(char.dmg_bonus + char.skill_bonus) / 100.0,
-		char.crit_rate,
-		char.crit_damage,
-		char.res_shred / 100.0,
-		1.0
+pub fn shark_furina_thoma_kazuha(
+	mainstats: &[f32; 6],
+	substats: &[usize; 5],
+	base: impl Fn(CharStats) -> CharStats,
+	buff: impl Fn(CharStats, CharStats) -> CharStats
+) -> f32 {
+	let stats1 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
+			&buffs::thoma_c6,
+			&buffs::furina_burst,
+			&buffs::hydro_resonance,
+			&buffs::scrl(false)				// Thoma is on scroll
+		],
+		mainstats,
+		substats
 	);
 
-	let cologne_multiplier = 600.0 / 100.0;
-	let cologne_damage = damage(
-		char.atk * cologne_multiplier,
-		1.0,
-		bonus,
-		char.dmg_bonus / 100.0,
-		char.crit_rate,
-		char.crit_damage,
-		char.res_shred / 100.0,
-		1.0
+	let stats2 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
+			&buffs::thoma_c6,
+			&buffs::furina_burst,
+			&buffs::hydro_resonance,
+			&buffs::scrl(false)				// Thoma is on scroll
+		],
+		mainstats,
+		substats
 	);
 
-	puff_damage * 11.0 + cologne_damage * 9.0
+	shark_n3_vape(&stats1, &stats2)
 }
 
-pub fn emilie_furina_vape(
+/////////////////////////////
+////////// Fraud ////////////
+/////////////////////////////
+
+fn v1_fraud_e_cast(
+	fraud: &CharStats,
+	vape: bool
+) -> f32 {
+	let cast_multiplier = 133.9 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&fraud),
+		false => 1.0
+	};
+
+	damage(
+		fraud.atk * cast_multiplier,
+		1.0,
+		0.0,
+		(fraud.dmg_bonus) / 100.0,
+		fraud.crit_rate,
+		fraud.crit_damage,
+		fraud.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+fn v1_fraud_e_tap(
+	fraud: &CharStats,
+	vape: bool
+) -> f32 {
+	let tap_multiplier = 230.4 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&fraud),
+		false => 1.0
+	};
+
+	damage(
+		fraud.atk * tap_multiplier,
+		1.0,
+		0.0,
+		(fraud.dmg_bonus) / 100.0,
+		fraud.crit_rate,
+		fraud.crit_damage,
+		fraud.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+pub fn fraud_yelan_furina_xilonen(
 	mainstats: &[f32; 6],
 	substats: &[usize; 5],
 	base: impl Fn(CharStats) -> CharStats,
 	buff: impl Fn(CharStats, CharStats) -> CharStats
 ) -> f32 {
 	let stats = stats(
-		characters::EMILIE,
+		characters::FRAUD,
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::reverie(5),
-			&buffs::bennett_burst,
-			&buffs::furina_burst(150.0)
+			&buffs::furina_burst,
+			&buffs::yelan_a4,
+			&buffs::xilonen_shred,
+			&buffs::scrl(true),
+			&buffs::hydro_resonance,
 		],
 		mainstats,
 		substats
 	);
 
-	emilie_lumidouce_case(&stats)
+	// fraud tap > xilo eq > furina eq > yelan eq > do nothing
+	let mut dmg = 0.0;
+	dmg += v1_fraud_e_cast(&stats, false);
+	for _ in 0..7 {
+		dmg += v1_fraud_e_tap(&stats, true);
+	}
+	dmg
 }
