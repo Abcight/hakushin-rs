@@ -173,7 +173,7 @@ fn main() {
 
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
-			let damage = rotations::shark_zhong_thoma_kazuha(
+			let damage = rotations::shark_furina_thoma_kazuha(
 				&mainstats,
 				&substats,
 				buffs::sac_jade_base, 

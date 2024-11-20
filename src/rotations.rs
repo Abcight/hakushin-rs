@@ -48,6 +48,56 @@ fn forward_vape_multiplier(
 ////////// Shark ////////////
 /////////////////////////////
 
+pub fn v3_shark_burst(
+	shark: &CharStats,
+	vape: bool
+) -> f32 {
+	let burst_multiplier = 84.1 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	damage(
+		shark.hp * burst_multiplier,
+		1.0,
+		0.0,
+		(shark.dmg_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		shark.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+pub fn v3shark_na_bite(
+	shark: &CharStats,
+	momentum: usize,
+	vape: bool
+) -> f32 {
+	let mut wave_bonus = momentum as f32 * 0.078 * shark.hp;
+	let na_multiplier = 15.637 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&shark),
+		false => 1.0
+	};
+
+	if momentum == 3 {
+		wave_bonus += 0.391 * shark.hp;
+	}
+
+	damage(
+		shark.hp * na_multiplier + shark.na_bonus_flat,
+		1.0,
+		wave_bonus,
+		(shark.dmg_bonus + shark.na_bonus) / 100.0,
+		shark.crit_rate,
+		shark.crit_damage,
+		shark.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
 pub fn v2shark_na_bite(
 	shark: &CharStats,
 	momentum: usize,
@@ -104,7 +154,7 @@ pub fn v1shark_na_bite(
 	)
 }
 
-pub fn shark_burst(
+pub fn v1_shark_burst(
 	shark: &CharStats,
 	vape: bool
 ) -> f32 {
@@ -132,20 +182,22 @@ pub fn shark_n3_vape(first_e_stats: &CharStats, second_e_stats: &CharStats) -> f
 	// The duration of her skill seems to be around 6s idfk
 	// Just assume she bites two times after applying 3 stacks each time
 	let mut damage = 0.0;
-	damage += v2shark_na_bite(&first_e_stats, 0, true);
-	damage += v2shark_na_bite(&first_e_stats, 3, true);
-	damage += v2shark_na_bite(&first_e_stats, 3, true);
+	damage += v3shark_na_bite(&first_e_stats, 2, true);
+	damage += v3shark_na_bite(&first_e_stats, 3, true);
+	damage += v3shark_na_bite(&first_e_stats, 3, true);
+	damage += v3shark_na_bite(&first_e_stats, 3, true);
 
 	// We can skill twice in a rotation
-	damage += v2shark_na_bite(&second_e_stats, 0, true);
-	damage += v2shark_na_bite(&second_e_stats, 3, true);
-	damage += v2shark_na_bite(&second_e_stats, 3, true);
+	damage += v3shark_na_bite(&second_e_stats, 2, true);
+	damage += v3shark_na_bite(&second_e_stats, 3, true);
+	damage += v3shark_na_bite(&second_e_stats, 3, true);
+	damage += v3shark_na_bite(&second_e_stats, 3, true);
 
 	// Use the burst either as an opening move
 	// or as a finisher, depending which is better
 	let burst = f32::max(
-		shark_burst(&first_e_stats, true),
-		shark_burst(&second_e_stats, true)
+		v3_shark_burst(&first_e_stats, true),
+		v3_shark_burst(&second_e_stats, true)
 	);
 	damage += burst;
 	damage
@@ -224,6 +276,49 @@ pub fn shark_zhong_thoma_kazuha(
 			&buffs::thoma_c6,
 			&buffs::zhong_shred,
 			&buffs::petra_share,
+			&buffs::scrl(false)				// Thoma is on scroll
+		],
+		mainstats,
+		substats
+	);
+
+	shark_n3_vape(&stats1, &stats2)
+}
+
+pub fn shark_furina_thoma_kazuha(
+	mainstats: &[f32; 6],
+	substats: &[usize; 5],
+	base: impl Fn(CharStats) -> CharStats,
+	buff: impl Fn(CharStats, CharStats) -> CharStats
+) -> f32 {
+	let stats1 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
+			&buffs::thoma_c6,
+			&buffs::furina_burst,
+			&buffs::hydro_resonance,
+			&buffs::scrl(false)				// Thoma is on scroll
+		],
+		mainstats,
+		substats
+	);
+
+	let stats2 = stats(
+		characters::SHARK,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::obsidian,
+			&buffs::kazuha_e,
+			&buffs::vv_shred,
+			&buffs::thoma_c6,
+			&buffs::furina_burst,
+			&buffs::hydro_resonance,
 			&buffs::scrl(false)				// Thoma is on scroll
 		],
 		mainstats,
