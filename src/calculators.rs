@@ -4,7 +4,8 @@ pub fn weapon_calculator(
     weapons: Vec<(&str, &dyn Fn(CharStats) -> CharStats, Box<dyn Fn(CharStats, CharStats) -> CharStats>)>,
     arti_mainstat_distributions: Vec<[f32; 6]>,
     arti_substat_distributions: Vec<[usize; 5]>,
-    rotation: fn(&[f32; 6], &[usize; 5], base: &dyn Fn(CharStats) -> CharStats, buff: &Box<dyn Fn(CharStats, CharStats) -> CharStats>) -> f32
+	relative_to: &str,
+    rotation: fn(&[f32; 6], &[usize; 5], base: &dyn Fn(CharStats) -> CharStats, buff: &Box<dyn Fn(CharStats, CharStats) -> CharStats>) -> f32,
 ) {
     let mut weapons_dpr = Vec::new();
 	for (name, base, buff) in &weapons {
@@ -24,7 +25,7 @@ pub fn weapon_calculator(
 	weapons_dpr.reverse();
 	let mut r1_damage = 0.0;
 	for (name, dpr) in &weapons_dpr {
-		if **name == "Surfing Time R1" {
+		if **name == relative_to {
 			r1_damage = *dpr;
 			break;
 		}

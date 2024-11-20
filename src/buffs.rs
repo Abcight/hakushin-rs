@@ -18,6 +18,38 @@ impl<T: Fn(CharStats, CharStats) -> CharStats + 'static> MagicBoxed for T {
 	}
 }
 
+pub fn empty_base(
+	mut base: CharStats,
+) -> CharStats {
+	base
+}
+
+pub fn empty_buff(
+	base: CharStats,
+	mut stats: CharStats,
+) -> CharStats {
+	stats
+}
+
+pub fn magic_guide_base(
+	mut base: CharStats,
+) -> CharStats {
+	base.atk += 354.0;
+	base.em += 187.0;
+	base
+}
+
+pub fn magic_guide_buff(
+	hydro_aura: bool,
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |base, mut stats| {
+		if hydro_aura {
+			stats.dmg_bonus += 24.0;
+		}
+		stats
+	}
+}
+
 pub fn sac_jade_base(
 	mut stats: CharStats,
 ) -> CharStats {
@@ -33,7 +65,7 @@ pub fn sac_jade_buff(
 	assert!(refinement <= 5);
 	move |base, mut stats| {
 		stats.hp += base.hp * (0.24 + 0.08 * refinement as f32);
-		stats.em = 30.0 + 10.0 * refinement as f32;
+		stats.em += 30.0 + 10.0 * refinement as f32;
 		stats
 	}
 }
@@ -52,6 +84,26 @@ pub fn soss_buff(
 	move |_, mut stats| {
 		stats.atk += 0.52 * stats.em;
 		stats.atk += 0.28 * stacks as f32 * stats.em;
+		stats
+	}
+}
+
+pub fn missive_base(
+	mut stats: CharStats
+) -> CharStats {
+	stats.atk += 510.0;
+	stats
+}
+
+pub fn missive_buff(
+	refinement: usize,
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.atk += 0.413 * base.atk;
+		stats.atk += 0.09 + 0.03 * refinement as f32;
+		stats.em += 36.0 + 12.0 * refinement as f32;
 		stats
 	}
 }
@@ -77,12 +129,53 @@ pub fn homa_buff(
 	}
 }
 
-pub fn surfing_time_base(
-	mut base: CharStats,
+pub fn lumidouce_base(
+	mut stats: CharStats
 ) -> CharStats {
-	base.crit_damage += 88.2;
-	base.atk += 542.0;
-	base
+	stats.crit_rate += 33.1;
+	stats.atk += 608.0;
+	stats
+}
+
+pub fn lumidouce_buff(
+	refinement: usize,
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	assert!(stacks <= 2);
+	move |base, mut stats| {
+		stats.atk += (11.0 * refinement as f32 * 4.0) / 100.0 * base.atk;
+		stats.dmg_bonus += stacks as f32 * (13.0 + refinement as f32 * 5.0);
+		stats
+	}
+}
+
+pub fn dragons_base(
+	mut stats: CharStats
+) -> CharStats {
+	stats.em += 221.0;
+	stats.atk += 454.0;
+	stats
+}
+
+pub fn dragons_buff(
+	refinement: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.dmg_bonus += 16.0 + refinement as f32 * 4.0;
+		stats
+	}
+}
+
+pub fn surfing_time_base(
+	mut stats: CharStats
+) -> CharStats {
+	stats.crit_damage += 88.2;
+	stats.atk += 542.0;
+	stats
 }
 
 pub fn surfing_time_buff(
@@ -165,7 +258,7 @@ pub fn floating_dreams_buff(
 ) -> impl Fn(CharStats, CharStats) -> CharStats {
 	assert!(refinement >= 1);
 	assert!(refinement <= 5);
-	
+
 	move |_, mut stats| {
 		stats.em += (24.0 + 8.0 * refinement as f32) * same_types_count as f32;
 		stats.dmg_bonus += (6.0 + 4.0 * refinement as f32) * other_types_count as f32;
@@ -329,11 +422,12 @@ pub fn bennett_burst(
 }
 
 pub fn furina_burst(
-	_base: CharStats,
-	mut stats: CharStats
-) -> CharStats {
-	stats.dmg_bonus += 75.0;
-	stats
+	fanfare: f32
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |_, mut stats| {
+		stats.dmg_bonus += 0.25 * fanfare;
+		stats
+	}
 }
 
 pub fn yelan_a4(
@@ -380,6 +474,24 @@ pub fn hod(
 	stats.na_bonus += 30.0;
 	stats.ca_bonus += 30.0;
 	stats
+}
+
+pub fn reverie2pc(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.atk += base.atk * 0.18;
+	stats
+}
+
+pub fn reverie(
+	stacks: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |base, stats| {
+		let mut stats = reverie2pc(base, stats);
+		stats.dmg_bonus += stacks.min(5) as f32 * 10.0;
+		stats
+	}
 }
 
 pub fn gilded2pc(
@@ -444,6 +556,14 @@ pub fn yun_burst(
 	stats
 }
 
+pub fn tenacity2pc(
+	base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.hp += base.hp * 0.2;
+	stats
+}
+
 pub fn mh2pc(
 	_base: CharStats,
 	mut stats: CharStats
@@ -488,7 +608,7 @@ pub fn obsidian(
 	stats
 }
 
-pub fn scrl(
+pub fn scroll(
 	saurian: bool
 ) -> impl Fn(CharStats, CharStats) -> CharStats {
 	move |_, mut stats| {

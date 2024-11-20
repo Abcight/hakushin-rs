@@ -10,6 +10,7 @@ pub const TAO: CharStats = CharStats {
 	na_bonus_flat: 0.0,
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
+	skill_bonus: 0.0,
 	em: 0.0,
 	res_shred: 0.0
 };
@@ -24,6 +25,22 @@ pub const SHARK: CharStats =  CharStats {
 	na_bonus_flat: 0.0,
 	ca_bonus: 0.0,
 	reaction_bonus: 0.0,
+	skill_bonus: 0.0,
+	em: 0.0,
+	res_shred: 0.0
+};
+
+pub const EMILIE: CharStats = CharStats {
+	hp: 13568.0,
+	atk: 335.0,
+	crit_rate: 5.0,
+	crit_damage: 88.4,
+	dmg_bonus: 0.0,
+	na_bonus: 0.0,
+	na_bonus_flat: 0.0,
+	ca_bonus: 0.0,
+	reaction_bonus: 0.0,
+	skill_bonus: 0.0,
 	em: 0.0,
 	res_shred: 0.0
 };
