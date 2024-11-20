@@ -13,6 +13,7 @@ pub struct CharStats {
 	atk: f32,
 	em: f32,
 	dmg_bonus: f32,
+	skill_dmg_bonus: f32,
 	na_bonus: f32,
 	na_bonus_flat: f32,
 	ca_bonus: f32,
@@ -66,6 +67,7 @@ fn stats_raw(
 		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
 		res_shred: 0.0,
 		na_bonus_flat: 0.0,
+		skill_dmg_bonus: 0.0,
 	};
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
@@ -111,10 +113,10 @@ fn main() {
 		[  187.0,  46.6, 0.0,  0.0,    0.0,  62.2  ],  // EM + HP + CD
 		[  0.0,    46.6, 0.0,  46.6,   0.0,  62.2  ],  // HP + Dmg + CD
 		[  0.0,    46.6, 0.0,  46.6,   31.1, 0.0   ],  // HP + Dmg + CR
-		// [  187.0,  0.0,  46.6, 0.0,    31.1, 0.0   ],  // EM + ATK + CR
-		// [  187.0,  0.0,  46.6, 0.0,    0.0,  62.2  ],  // EM + ATK + CD
-		// [  0.0,    0.0,  46.6, 46.6,   0.0,  62.2  ],  // ATK + Dmg + CD
-		// [  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
+		[  187.0,  0.0,  46.6, 0.0,    31.1, 0.0   ],  // EM + ATK + CR
+		[  187.0,  0.0,  46.6, 0.0,    0.0,  62.2  ],  // EM + ATK + CD
+		[  0.0,    0.0,  46.6, 46.6,   0.0,  62.2  ],  // ATK + Dmg + CD
+		[  0.0,    0.0,  46.6, 46.6,   31.1, 0.0   ],  // ATK + Dmg + CR
 	];
 
 	// Assuming we have n max-rolls to distribute across substats,
@@ -156,6 +158,21 @@ fn main() {
 	// 	("Tome of Eternal Flow R5", &buffs::tome_base, buffs::tome_buff(5, 0).boxed()),
 	// ];
 
+	let claymores: Vec<(&str, &dyn Fn(CharStats) -> CharStats, Box<dyn Fn(CharStats, CharStats) -> CharStats>)> = vec![
+		("Earth Shaker R1", &buffs::earth_shaker_base, buffs::earth_shaker_buff(1).boxed()),
+		("Earth Shaker R5", &buffs::earth_shaker_base, buffs::earth_shaker_buff(5).boxed()),
+		("Tidal Shadow R1", &buffs::tidal_shadow_base, buffs::tidal_shadow_buff(1, true).boxed()),
+		("Tidal Shadow R5", &buffs::tidal_shadow_base, buffs::tidal_shadow_buff(5, true).boxed()),
+		("Mailed Flower R1", &buffs::mailed_flower_base, buffs::mailed_flower_buff(1, true).boxed()),
+		("Mailed Flower R5", &buffs::mailed_flower_base, buffs::mailed_flower_buff(5, true).boxed()),
+		("Serpent Spine R1", &buffs::serpent_spine_base, buffs::serpent_spine_buff(1, 5).boxed()),
+		("Serpent Spine R5", &buffs::serpent_spine_base, buffs::serpent_spine_buff(5, 5).boxed()),
+		("Rainslasher R1", &buffs::rainslasher_base, buffs::rainslasher_buff(1, true).boxed()),
+		("Rainslasher R5", &buffs::rainslasher_base, buffs::rainslasher_buff(5, true).boxed()),
+		("Sun R1", &buffs::sun_base, buffs::sun_buff(1, true, true).boxed()),
+		("Sun R5", &buffs::sun_base, buffs::sun_buff(5, true, true).boxed()),
+	];
+
 	// calculators::weapon_calculator(
 	// 	weapons,
 	// 	arti_mainstat_distributions,
@@ -176,7 +193,7 @@ fn main() {
 			let damage = rotations::shark_furina_thoma_kazuha(
 				&mainstats,
 				&substats,
-				buffs::sac_jade_base, 
+				buffs::sac_jade_base,
 				buffs::sac_jade_buff(5)
 			);
 
@@ -185,7 +202,7 @@ fn main() {
 			all_damage.push((damage, distribution));
 		}
 	}
-	
+
 	// Decide target distribution
 	all_damage.sort_by_key(|x| x.0 as usize);
 	let median = all_damage.get(all_damage.len() / 2).unwrap();

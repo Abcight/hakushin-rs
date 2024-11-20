@@ -329,10 +329,79 @@ pub fn shark_furina_thoma_kazuha(
 }
 
 /////////////////////////////
-/////////// Tao /////////////
+////////// Fraud ////////////
 /////////////////////////////
 
-/// Assuming 11 vaped normals, 11 vaped CAs, burst.
-pub fn tao_benny_vape(stats: &CharStats) -> f32 {
-	todo!()
+fn v1_fraud_e_cast(
+	fraud: &CharStats,
+	vape: bool
+) -> f32 {
+	let cast_multiplier = 133.9 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&fraud),
+		false => 1.0
+	};
+
+	damage(
+		fraud.atk * cast_multiplier,
+		1.0,
+		0.0,
+		(fraud.dmg_bonus) / 100.0,
+		fraud.crit_rate,
+		fraud.crit_damage,
+		fraud.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+fn v1_fraud_e_tap(
+	fraud: &CharStats,
+	vape: bool
+) -> f32 {
+	let tap_multiplier = 230.4 / 100.0;
+	let vape_multiplier = match vape {
+		true => forward_vape_multiplier(&fraud),
+		false => 1.0
+	};
+
+	damage(
+		fraud.atk * tap_multiplier,
+		1.0,
+		0.0,
+		(fraud.dmg_bonus) / 100.0,
+		fraud.crit_rate,
+		fraud.crit_damage,
+		fraud.res_shred / 100.0,
+		vape_multiplier
+	)
+}
+
+pub fn fraud_yelan_furina_xilonen(
+	mainstats: &[f32; 6],
+	substats: &[usize; 5],
+	base: impl Fn(CharStats) -> CharStats,
+	buff: impl Fn(CharStats, CharStats) -> CharStats
+) -> f32 {
+	let stats = stats(
+		characters::FRAUD,
+		&base,								// This is the weapon base stat function
+		vec![								// This is a list of all the dynamic buffs
+			&buff,
+			&buffs::furina_burst,
+			&buffs::yelan_a4,
+			&buffs::xilonen_shred,
+			&buffs::scrl(true),
+			&buffs::hydro_resonance,
+		],
+		mainstats,
+		substats
+	);
+
+	// fraud tap > xilo eq > furina eq > yelan eq > do nothing
+	let mut dmg = 0.0;
+	dmg += v1_fraud_e_cast(&stats, false);
+	for _ in 0..7 {
+		dmg += v1_fraud_e_tap(&stats, true);
+	}
+	dmg
 }
