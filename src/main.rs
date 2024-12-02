@@ -1,4 +1,4 @@
-use buffs::{sac_jade_buff, MagicBoxed};
+use buffs::MagicBoxed;
 
 mod buffs;
 mod characters;
@@ -13,7 +13,6 @@ pub struct CharStats {
 	atk: f32,
 	em: f32,
 	dmg_bonus: f32,
-	skill_dmg_bonus: f32,
 	na_bonus: f32,
 	na_bonus_flat: f32,
 	skill_bonus: f32,
@@ -117,20 +116,26 @@ fn stats_raw(
 ) -> CharStats {
 	let base = weapon(base);
 	let mut dynamic = CharStats {
-		hp: 4780.0 + base.hp + base.hp * (hp_rolls as f32 * 5.83 + mainstat_hp) / 100.0,
-		atk: 311.0 + base.atk * (1.0 + (atk_rolls as f32 * 5.83) / 100.0 + mainstat_atk / 100.0),
-		crit_rate: base.crit_rate + mainstat_cr + crit_rate_rolls as f32 * 3.89,
-		crit_damage: base.crit_damage + mainstat_cd + crit_damage_rolls as f32 * 7.77,
+		hp: 4780.0 + base.hp + base.hp * (hp_rolls as f32 * 4.96 + mainstat_hp) / 100.0,
+		atk: 311.0 + base.atk + base.atk * ((atk_rolls as f32 * 4.96) / 100.0 + mainstat_atk / 100.0),
+		crit_rate: base.crit_rate + mainstat_cr + crit_rate_rolls as f32 * 3.31,
+		crit_damage: base.crit_damage + mainstat_cd + crit_damage_rolls as f32 * 6.62,
 		dmg_bonus: base.dmg_bonus + mainstat_elemental,
 		reaction_bonus: 0.0,
 		na_bonus: 0.0,
 		skill_bonus: 0.0,
 		ca_bonus: 0.0,
-		em: base.em + mainstat_em + em_rolls as f32 * 23.31,
+		em: base.em + mainstat_em + em_rolls as f32 * 19.82,
 		res_shred: 0.0,
 		na_bonus_flat: 0.0,
-		skill_dmg_bonus: 0.0,
 	};
+	dynamic.hp += base.hp * (2.0 * 4.96) / 100.0;
+	dynamic.hp += 2.0 * 253.0;
+	dynamic.atk += base.atk * (2.0 * 4.96) / 100.0;
+	dynamic.atk += 2.0 * 16.54;
+	dynamic.em += 2.0 * 16.82;
+	dynamic.crit_rate += 2.0 * 3.31;
+	dynamic.crit_damage += 2.0 * 6.62;
 	for buff in dynamic_buffs {
 		dynamic = buff(base, dynamic);
 	}
@@ -245,17 +250,21 @@ fn main() {
 		("Rainslasher R5", &buffs::rainslasher_base, buffs::rainslasher_buff(5, true).boxed()),
 		("Sun R1", &buffs::sun_base, buffs::sun_buff(1, true, true).boxed()),
 		("Sun R5", &buffs::sun_base, buffs::sun_buff(5, true, true).boxed()),
+		("Wolf's Gravestone R1", &buffs::wgs_base, buffs::wgs_buff(1).boxed()),
+		("Wolf's Gravestone R5", &buffs::wgs_base, buffs::wgs_buff(5).boxed()),
 	];
 
-	// calculators::weapon_calculator(
-	// 	catalysts,
-	// 	arti_mainstat_distributions,
-	// 	arti_substat_distributions,
-	// 	"Ring of Yaxche R5",
-	// 	|mainstats, substats, base, buff| {
-	// 		rotations::shark_furina_thoma_nahida(mainstats, substats, base, buff)
-	// 	}
-	// );
+	calculators::weapon_calculator(
+		claymores,
+		arti_mainstat_distributions,
+		arti_substat_distributions,
+		"Sun R1",
+		|mainstats, substats, base, buff| {
+			rotations::fraud_yelan_furina_xilonen(mainstats, substats, base, buff)
+		}
+	);
+
+	/*
 
 	// We're gonna keep track of all builds
 	let mut all_damage = Vec::with_capacity(
@@ -266,20 +275,20 @@ fn main() {
 	for mainstats in arti_mainstat_distributions {
 		for substats in &arti_substat_distributions {
 			let stats_base = stats(
-				characters::SHARK,
-				&buffs::sac_jade_base,
+				characters::FRAUD,
+				&buffs::sun_base,
 				vec![
-					&buffs::sac_jade_buff(5)
+					&buffs::sun_buff(1, true, true)
 				],
 				&mainstats,
 				substats
 			);
 
-			let damage = rotations::shark_furina_thoma_nahida(
+			let damage = rotations::fraud_yelan_furina_xilonen(
 				&mainstats,
 				&substats,
-				buffs::sac_jade_base,
-				buffs::sac_jade_buff(5)
+				buffs::sun_base,
+				buffs::sun_buff(1, true, true)
 			);
 
 			let mut distribution = mainstats.to_vec();
@@ -314,4 +323,5 @@ fn main() {
 
 	// Print a summary of the stats (incl. buffs)
 	println!("DPR: {}", damage);
+	*/
 }

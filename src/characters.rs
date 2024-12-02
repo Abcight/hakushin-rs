@@ -13,7 +13,6 @@ pub const TAO: CharStats = CharStats {
 	skill_bonus: 0.0,
 	em: 0.0,
 	res_shred: 0.0,
-	skill_dmg_bonus: 0.0,
 };
 
 pub const SHARK: CharStats =  CharStats {
@@ -44,7 +43,6 @@ pub const EMILIE: CharStats = CharStats {
 	skill_bonus: 0.0,
 	em: 0.0,
 	res_shred: 0.0,
-	skill_dmg_bonus: 0.0,
 };
 
 pub const FRAUD: CharStats = CharStats {
@@ -59,5 +57,5 @@ pub const FRAUD: CharStats = CharStats {
 	reaction_bonus: 0.0,
 	em: 0.0,
 	res_shred: 0.0,
-	skill_dmg_bonus: 0.0
+	skill_bonus: 0.0
 };

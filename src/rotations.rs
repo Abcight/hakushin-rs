@@ -219,49 +219,6 @@ pub fn shark_yelan_xl_zhong(
 	shark_vape(&stats)
 }
 
-pub fn shark_furina_thoma_kazuha(
-	mainstats: &[f32; 6],
-	substats: &[usize; 5],
-	base: impl Fn(CharStats) -> CharStats,
-	buff: impl Fn(CharStats, CharStats) -> CharStats
-) -> f32 {
-	let stats1 = stats(
-		characters::SHARK,
-		&base,								// This is the weapon base stat function
-		vec![								// This is a list of all the dynamic buffs
-			&buff,
-			&buffs::obsidian,
-			&buffs::kazuha_e,
-			&buffs::vv_shred,
-			&buffs::thoma_c6,
-			&buffs::furina_burst,
-			&buffs::hydro_resonance,
-			&buffs::scrl(false)				// Thoma is on scroll
-		],
-		mainstats,
-		substats
-	);
-
-	let stats2 = stats(
-		characters::SHARK,
-		&base,								// This is the weapon base stat function
-		vec![								// This is a list of all the dynamic buffs
-			&buff,
-			&buffs::obsidian,
-			&buffs::kazuha_e,
-			&buffs::vv_shred,
-			&buffs::thoma_c6,
-			&buffs::furina_burst,
-			&buffs::hydro_resonance,
-			&buffs::scrl(false)				// Thoma is on scroll
-		],
-		mainstats,
-		substats
-	);
-
-	shark_n3_vape(&stats1, &stats2)
-}
-
 /////////////////////////////
 ////////// Fraud ////////////
 /////////////////////////////
@@ -280,7 +237,7 @@ fn v1_fraud_e_cast(
 		fraud.atk * cast_multiplier,
 		1.0,
 		0.0,
-		(fraud.dmg_bonus) / 100.0,
+		(fraud.dmg_bonus + fraud.skill_bonus) / 100.0,
 		fraud.crit_rate,
 		fraud.crit_damage,
 		fraud.res_shred / 100.0,
@@ -302,7 +259,7 @@ fn v1_fraud_e_tap(
 		fraud.atk * tap_multiplier,
 		1.0,
 		0.0,
-		(fraud.dmg_bonus) / 100.0,
+		(fraud.dmg_bonus + fraud.skill_bonus) / 100.0,
 		fraud.crit_rate,
 		fraud.crit_damage,
 		fraud.res_shred / 100.0,
@@ -321,11 +278,12 @@ pub fn fraud_yelan_furina_xilonen(
 		&base,								// This is the weapon base stat function
 		vec![								// This is a list of all the dynamic buffs
 			&buff,
-			&buffs::furina_burst,
+			&buffs::obsidian,
+			&buffs::furina_burst(100.0),
 			&buffs::yelan_a4,
 			&buffs::xilonen_shred,
-			&buffs::scrl(true),
 			&buffs::hydro_resonance,
+			&|base, mut stats| { stats.atk += 0.35 * base.atk; stats }, // Burst ascension passive
 		],
 		mainstats,
 		substats
@@ -333,9 +291,13 @@ pub fn fraud_yelan_furina_xilonen(
 
 	// fraud tap > xilo eq > furina eq > yelan eq > do nothing
 	let mut dmg = 0.0;
-	dmg += v1_fraud_e_cast(&stats, false);
-	for _ in 0..7 {
-		dmg += v1_fraud_e_tap(&stats, true);
-	}
+	dmg += v1_fraud_e_cast(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
+	dmg += v1_fraud_e_tap(&stats, true);
 	dmg
 }

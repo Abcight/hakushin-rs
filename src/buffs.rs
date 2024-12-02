@@ -33,7 +33,26 @@ pub fn earth_shaker_buff(
 	assert!(refinement <= 5);
 	move |base, mut stats| {
 		stats.atk += base.atk * 0.276;
-		stats.skill_dmg_bonus += 12.0 + 4.0 * refinement as f32;
+		stats.skill_bonus += 12.0 + 4.0 * refinement as f32;
+		stats
+	}
+}
+
+pub fn wgs_base(
+	mut stats: CharStats,
+) -> CharStats {
+	stats.atk += 608.0;
+	stats
+}
+
+pub fn wgs_buff(
+	refinement: usize
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	assert!(refinement >= 1);
+	assert!(refinement <= 5);
+	move |base, mut stats| {
+		stats.atk += base.atk * 0.496;
+		stats.atk += base.atk * (0.15 + 0.05 * refinement as f32);
 		stats
 	}
 }
@@ -54,7 +73,7 @@ pub fn tidal_shadow_buff(
 	move |base, mut stats| {
 		stats.atk += base.atk * 0.413;
 		if healed {
-			stats.atk += base.atk * (0.18 + 0.6 * refinement as f32);
+			stats.atk += base.atk * (0.18 + 0.06 * refinement as f32);
 		}
 		stats
 	}
@@ -76,7 +95,7 @@ pub fn mailed_flower_buff(
 	assert!(refinement <= 5);
 	move |base, mut stats| {
 		if buff {
-			stats.atk += base.atk * (0.9 + 0.3 * refinement as f32);
+			stats.atk += base.atk * (0.09 + 0.03 * refinement as f32);
 			stats.em += 36.0 + 12.0 * refinement as f32;
 		}
 		stats
@@ -144,7 +163,7 @@ pub fn sun_buff(
 	assert!(refinement <= 5);
 	move |base, mut stats| {
 		if buff {
-			let mut atk_buff = base.atk * (0.21 + 0.7 * refinement as f32);
+			let mut atk_buff = base.atk * (0.21 + 0.07 * refinement as f32);
 			let mut crit_dmg_buff = 15.0 + 5.0 * refinement as f32;
 			if blessing {
 				atk_buff *= 1.75;
@@ -639,6 +658,27 @@ pub fn reverie(
 	move |base, stats| {
 		let mut stats = reverie2pc(base, stats);
 		stats.dmg_bonus += stacks.min(5) as f32 * 10.0;
+		stats
+	}
+}
+
+pub fn troupe2pc(
+	_base: CharStats,
+	mut stats: CharStats
+) -> CharStats {
+	stats.skill_bonus += 20.0;
+	stats
+}
+
+pub fn troupe(
+	is_off_field: bool
+) -> impl Fn(CharStats, CharStats) -> CharStats {
+	move |base, stats| {
+		let mut stats = troupe2pc(base, stats);
+		stats.skill_bonus += 25.0;
+		if is_off_field {
+			stats.skill_bonus += 25.0;
+		}
 		stats
 	}
 }
